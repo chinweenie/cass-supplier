@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  cassandra1:
+    image: cassandra
+    container_name: cassandra1
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_SEEDS=cassandra1
+    networks:
+      - cassandra-network
+  cassandra2:
+    image: cassandra
+    container_name: cassandra2
+    environment:
+      - CASSANDRA_SEEDS=cassandra1
+    networks:
+      - cassandra-network
+  cassandra3:
+    image: cassandra
+    container_name: cassandra3
+    environment:
+      - CASSANDRA_SEEDS=cassandra1
+    networks:
+      - cassandra-network
+  myserver:
+    container_name: myserver
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - cassandra1
+    networks:
+      - cassandra-network
+
+
+networks:
+  cassandra-network:
+    driver: bridge
