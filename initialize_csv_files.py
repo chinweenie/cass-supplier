@@ -66,7 +66,7 @@ def process_stock():
     stock_df.to_csv('stock_df.csv',index=False)
 
 def process_customer():
-    customer_df = pandas.read_csv('customer.csv'. header=None)
+    customer_df = pandas.read_csv('customer.csv', header=None)
     customer_df.columns = ['c_w_id', 'c_d_id', 'c_id', 'c_first', 'c_middle', 'c_last',
                            'street_1', 'street_2', 'city',
                            'state', 'zip',
@@ -83,8 +83,7 @@ def process_customer():
     customer_df.to_csv('customer_df.csv',index=False)
 
 
-def initialize_district_by_warehouse():
-    d_b_w_df = pandas.read_csv('district_df.csv')
+
 
 if __name__ == '__main__':
     process_warehouse()
@@ -96,7 +95,5 @@ if __name__ == '__main__':
     process_stock()
     process_customer()
 
-
-    initialize_district_by_warehouse()
     
 
