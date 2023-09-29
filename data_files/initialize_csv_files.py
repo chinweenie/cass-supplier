@@ -98,6 +98,8 @@ def process_customer():
 
 
 
+
+
 if __name__ == '__main__':
     process_warehouse()
     process_district()
@@ -107,4 +109,6 @@ if __name__ == '__main__':
     process_stock()
     process_customer()
     process_orders_by_customer()
+
+    
 
