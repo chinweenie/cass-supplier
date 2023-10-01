@@ -94,13 +94,19 @@ def process_related_customers_txns():
     order_line_df = order_line_df.drop(['ol_delivery_d', 'ol_amount', 'ol_supply_w_id', 'ol_quantity', 'ol_dist_info'], axis=1)
 
     # rename columns in order and order_line for inner join
-    orders_df.rename(columns={'o_w_id': 'w_id', 'o_d_id': 'd_id'}, inplace=True)
-    order_line_df.rename(columns={'ol_w_id': 'w_id', 'ol_d_id': 'd_id', 'ol_o_id': 'o_id'}, inplace=True)
+    orders_df.rename(columns={'o_w_id': 'w_id', 'o_d_id': 'd_id', 'o_c_id': 'c_id'}, inplace=True)
+    order_line_df.rename(columns={'ol_w_id': 'w_id', 'ol_d_id': 'd_id', 'ol_o_id': 'o_id', 'ol_i_id': 'i_id'}, inplace=True)
 
-    order_join_orderline_df = pandas.merge(orders_df, order_line_df, on=['w_id', 'd_id', 'o_id'])
+    orders_by_warehouse_district_customer_df = pandas.merge(orders_df, order_line_df, on=['w_id', 'd_id', 'o_id'])
+    
+    new_ordering = ['w_id', 'd_id', 'c_id', 'o_id', 'ol_number', 'i_id']
+    orders_by_warehouse_district_customer_df = orders_by_warehouse_district_customer_df[new_ordering]
 
-    print('order_join_orderline_df size: ' + str(order_join_orderline_df.shape))
-    order_join_orderline_df.to_csv('order_join_orderline_df.csv', index=False)
+    # this table is clustered by these 3 columns, w_id, d_id, c_id
+    orders_by_warehouse_district_customer_df.sort_values(by=['w_id', 'd_id', 'c_id'])
+
+    print('orders_by_warehouse_district_customer_df size: ' + str(orders_by_warehouse_district_customer_df.shape))
+    orders_by_warehouse_district_customer_df.to_csv('orders_by_warehouse_district_customer_df.csv', index=False)
 
     '''
     two_item_column_names = ['w_id', 'd_id', 'o_id', 'c_id', 'ol_number', 'i1_id', 'i2_id']
