@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\setup_scripts"
   ],
-  "SelectedNode": "\\C:\\Users\\Jan\\Source\\Repos\\cass-supplier",
+  "SelectedNode": "\\docker-compose.yml",
   "PreviewInSolutionExplorer": false
 }

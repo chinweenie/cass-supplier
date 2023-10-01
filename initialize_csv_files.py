@@ -82,18 +82,26 @@ def process_customer():
     # print(row_counts)
     customer_df.to_csv('customer_df.csv',index=False)
 
+def process_undelivered_orders_by_warehouse_district():
+    orders_by_wd_df = pandas.read_csv('order_df.csv')
+    is_undelivered = orders_by_wd_df['o_carrier_id'].isnull()
+    undelivered_orders_by_wd_df = orders_by_wd_df[is_undelivered]
+    undelivered_orders_by_wd_df = undelivered_orders_by_wd_df.drop(['o_ol_cnt', 'o_all_local', 'o_entry_d'], axis=1)
 
+    undelivered_orders_by_wd_df.to_csv('undelivered_orders.csv', index=False)
 
 
 if __name__ == '__main__':
+    '''
     process_warehouse()
-    
     process_district()
     process_items()
     process_order()
     process_order_line()
     process_stock()
     process_customer()
+    '''
 
+    process_undelivered_orders_by_warehouse_district()
     
 
