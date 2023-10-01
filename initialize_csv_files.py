@@ -103,7 +103,7 @@ def process_related_customers_txns():
     orders_by_warehouse_district_customer_df = orders_by_warehouse_district_customer_df[new_ordering]
 
     # this table is clustered by these 3 columns, w_id, d_id, c_id
-    orders_by_warehouse_district_customer_df.sort_values(by=['w_id', 'd_id', 'c_id'])
+    orders_by_warehouse_district_customer_df = orders_by_warehouse_district_customer_df.sort_values(by=['w_id', 'd_id', 'c_id'])
 
     print('orders_by_warehouse_district_customer_df size: ' + str(orders_by_warehouse_district_customer_df.shape))
     orders_by_warehouse_district_customer_df.to_csv('orders_by_warehouse_district_customer_df.csv', index=False)
