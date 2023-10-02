@@ -2,6 +2,8 @@ from cassandra.cluster import Cluster
 import sys
 from decimal import Decimal
 
+from cassandra.query import BatchStatement, SimpleStatement
+
 
 def print_res(results):
     for row in results:
@@ -21,37 +23,39 @@ def process_p(db, values):
 
     user_lookup_statement = db.prepare("SELECT * FROM customers WHERE c_w_id = ? AND c_id = ?")
     user_res = db.execute(user_lookup_statement, (c_w_id, c_id))
-    print_res(user_res)
     old_balance = user_res[0].c_balance
 
-    top_balance_lookup = db.prepare("SELECT * FROM top_balances where c_w_id = ? AND AND c_balance = ? AND c_id = ?")
-    top_balance_res = db.execure(top_balance_lookup, (c_w_id, old_balance, c_id))
-    print_res(top_balance_res)
-
-    warehouse_lookup = db.prepare("SELECT * FROM warehouses WHERE w_id = ?")
-    warehouse_res = db.execute(warehouse_lookup, (c_w_id,))
-    print_res(warehouse_res)
-
-    district_lookup = db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
-    district_res = db.execute(district_lookup, (c_w_id, c_d_id))
-    print_res(district_res)
-
-
     new_balance = old_balance - payment
-    new_ytd_balance = user_res[0].c_ytd_balance + payment
+    new_ytd_balance = user_res[0].c_ytd_payment + float(payment)
     new_payment_cnt = user_res[0].c_payment_cnt + 1
 
-    update_customer_statement = "UPDATE customers SET c_balance = ?, c_ytd_balance = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_id = ?"
-    db.execute(update_customer_statement, (new_balance, new_ytd_balance, new_payment_cnt
-                                           , c_w_id, c_id))
-    
-    update_top_balance_statement = "UPDATE top_balances set c_balance = ? WHERE c_w_id = ? AND c_balance = ? AND c_id = ?"
-    db.execute(update_top_balance_statement, (new_balance, c_w_id, old_balance, c_id))
+    print(f"Check new balance {new_balance}")
+    print(f"Check new_ytd_balance {new_ytd_balance}")
+    print(f"Check new_payment_cnt {new_payment_cnt}")
 
-    latest_top_balances_lookup = "SELECT * FROM top_balances LIMIT 10;"
-    latest_top_balances_res = db.execute(latest_top_balances_lookup)
-    print(f"Check for latest top balances!")
-    print_res(latest_top_balances_res)
+    update_customer_statement = db.prepare("UPDATE customers SET c_balance = ?, c_ytd_payment = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_id = ?")
+    bound_statement = update_customer_statement.bind((new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_id))
+    db.execute(bound_statement)
+
+    batch = BatchStatement()
+    delete_query = db.prepare("DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_id = ? AND dummy_partition_key = 'global'")
+    batch.add(delete_query, (c_w_id, old_balance, c_id))
+    insert_query = db.prepare("INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, dummy_partition_key) VALUES (?, ?, ?, ?, ?)")
+    batch.add(insert_query, (new_balance, c_w_id, c_id, c_d_id, 'global'))
+    db.execute(batch)
+
+    latest_top_balances = SimpleStatement(f"""SELECT * FROM top_balances WHERE c_w_id ={c_w_id} AND c_balance={new_balance} AND c_id={c_id} AND dummy_partition_key='global'""")
+    res = db.execute(latest_top_balances)
+    print_res(res)
+
+    latest_customer = SimpleStatement(f"""SELECT * FROM customers WHERE c_w_id={c_w_id} AND c_id={c_id}""")
+    res = db.execute(latest_customer)
+    print_res(res)
+
+    # latest_top_balances_lookup = "SELECT * FROM top_balances LIMIT 10;"
+    # latest_top_balances_res = db.execute(latest_top_balances_lookup)
+    # print(f"Check for latest top balances!")
+    # print_res(latest_top_balances_res)
 
 
 
@@ -85,7 +89,4 @@ if __name__ == '__main__':
     except FileNotFoundError:
         print(f"File {filename} not found!")
 
-    # rows = session.execute('SELECT * FROM warehouses LIMIT 10;')
-    # for row in rows:
-    #     print(row)
     cluster.shutdown()

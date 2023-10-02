@@ -91,9 +91,11 @@ def process_customer():
         'c_id': [],
         'c_w_id': [],
         'c_d_id': [],
-        'c_balance': []
+        'c_balance': [],
+        'dummy_partition_key': []
     })
     top_balances_df[['c_id', 'c_w_id', 'c_d_id', 'c_balance']] = customer_df[['c_id', 'c_w_id', 'c_d_id', 'c_balance']]
+    top_balances_df['dummy_partition_key'] = 'global'
     top_balances_df.to_csv('top_balances_df.csv', index=False)
 
 
@@ -101,14 +103,14 @@ def process_customer():
 
 
 if __name__ == '__main__':
-    process_warehouse()
-    process_district()
-    process_items()
-    process_order()
-    process_order_line()
-    process_stock()
+    # process_warehouse()
+    # process_district()
+    # process_items()
+    # process_order()
+    # process_order_line()
+    # process_stock()
     process_customer()
-    process_orders_by_customer()
+    # process_orders_by_customer()
 
     
 
