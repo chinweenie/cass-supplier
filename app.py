@@ -74,14 +74,8 @@ if __name__ == '__main__':
 
     try:
         with open(filename, 'r') as file:
-            desired_line_index = 4
-            current_index = 0
 
             for line in file:
-                if current_index == desired_line_index:
-                    print(line)
-                    break
-                current_index += 1
                 print(line.strip())
                 txn_keys = line.strip().split(',')
                 if txn_keys[0].lower() == 'p':
