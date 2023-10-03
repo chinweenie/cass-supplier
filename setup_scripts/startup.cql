@@ -72,16 +72,19 @@ CREATE TABLE IF NOT EXISTS supplier.customers
 );
 
 -- For transaction 7
--- Decided to use a dummy partition key since the table roughly would be maintained at 30k records
+-- Decided to use a dummy partition key since the table roughly would be maintained at 300k records
 -- Single node partition should be able to handle the workload of payment transaction at 20%
 -- Another option is Materialized view, but this would add overhead for write updates
 -- Can do a benchmark on speed on these two options
 CREATE TABLE IF NOT EXISTS supplier.top_balances
 (
-    C_BALANCE DECIMAL,
-    C_ID      INT,
-    C_W_ID    INT,
-    C_D_ID    INT,
+    C_BALANCE           DECIMAL,
+    C_ID                INT,
+    C_NAME              name,
+    C_W_ID              INT,
+    W_NAME              VARCHAR,
+    D_NAME              VARCHAR,
+    C_D_ID              INT,
     DUMMY_PARTITION_KEY TEXT,
     PRIMARY KEY (DUMMY_PARTITION_KEY, C_BALANCE, C_ID, C_W_ID)
 ) WITH CLUSTERING ORDER BY (C_BALANCE ASC);
@@ -112,12 +115,12 @@ CREATE TABLE IF NOT EXISTS supplier.items
 -- For Transaction 4
 CREATE TABLE IF NOT EXISTS supplier.orders_by_customer
 (
-    C_W_ID         INT,
-    C_D_ID         INT,
-    C_ID           INT,
-    O_ID           INT,
-    O_CARRIER_ID   INT,
-    O_ENTRY_D      TIMESTAMP,
+    C_W_ID       INT,
+    C_D_ID       INT,
+    C_ID         INT,
+    O_ID         INT,
+    O_CARRIER_ID INT,
+    O_ENTRY_D    TIMESTAMP,
     PRIMARY KEY ((C_W_ID, C_D_ID, C_ID), O_ENTRY_D, O_ID)
 ) WITH CLUSTERING ORDER BY (O_ENTRY_D DESC, O_ID DESC);
 
