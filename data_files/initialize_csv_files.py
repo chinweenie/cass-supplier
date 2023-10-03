@@ -2,7 +2,6 @@ import json
 
 import pandas
 
-
 def merge_name(row):
     return {
         'first': row['c_first'],
@@ -23,7 +22,7 @@ def merge_cells(row):
 
 
 def process_warehouse():
-    warehouse_df = pandas.read_csv('warehouse.csv', header=None, dtype=str)
+    warehouse_df = pandas.read_csv('warehouse.csv', dtype=str, header=None)
     warehouse_df.columns = ['w_id', 'w_name', 'street_1', 'street_2', 'city', 'state', 'zip', 'w_tax',
                             'w_ytd']
     warehouse_df['w_address'] = warehouse_df.apply(merge_cells, axis=1)
@@ -33,7 +32,7 @@ def process_warehouse():
 
 
 def process_district():
-    district_df = pandas.read_csv('district.csv', header=None)
+    district_df = pandas.read_csv('district.csv',header=None)
     district_df.columns = ['d_w_id', 'd_id', 'd_name', 'street_1', 'street_2', 'city', 'state', 'zip',
                            'd_tax', 'd_ytd', 'd_next_o_id']
     district_df['address'] = district_df.apply(merge_cells, axis=1)
@@ -47,12 +46,22 @@ def process_items():
 
 def process_order():
     order_df = pandas.read_csv('order.csv', header=None)
-    order_df.columns = ['o_w_id', 'o_d_id', 'o_id', 'o_c_id', 'o_carrier_id', 'o_ol_cnt', 'o_all_local', 'o_entry_d']
+    order_df.columns = ['o_w_id', 'o_d_id', 'o_id', 'o_c_id', 'o_ol_cnt','o_carrier_id', 'o_all_local', 'o_entry_d']
     order_df.to_csv('order_df.csv',index=False)
 
+def process_orders_by_customer():
+    orders_df = pandas.read_csv('order_df.csv')
+    customers_df = pandas.read_csv('customer_df.csv')
+
+    orders_by_customer_df = pandas.merge(customers_df, orders_df,
+                                         left_on=['c_w_id', 'c_d_id', 'c_id'],
+                                         right_on=['o_w_id', 'o_d_id', 'o_c_id'],
+                                         how='inner')
+    orders_by_customer_df = orders_by_customer_df.loc[:, ['c_w_id', 'c_d_id', 'c_id', 'o_id', 'o_carrier_id', 'o_entry_d']]
+    orders_by_customer_df.to_csv('orders_by_customer_df.csv', index=False)
+
 def process_order_line():
-    df = pandas.read_csv('order-line.csv', header=None)
-    order_line_df = pandas.read_csv('order-line.csv')
+    order_line_df = pandas.read_csv('order-line.csv', header=None)
     order_line_df.columns = ['ol_w_id', 'ol_d_id', 'ol_o_id', 'ol_number', 'ol_i_id', 'ol_delivery_d', 'ol_amount', 'ol_supply_w_id', 'ol_quantity', 'ol_dist_info']
     order_line_df.to_csv('order_line_df.csv',index=False)
 
@@ -123,8 +132,8 @@ def process_related_customers_txns():
         item_filter = (cross_df['ol_i_id'] != cross_df['ol_i_id1'])
         cross_df = cross_df[item_filter]
 
-        cross_df = cross_df.drop(['w_id1', 'd_id1', 'o_id1', 'o_c_id1', 'ol_number1'], axis=1)
-        cross_df.rename(columns={'o_c_id': 'c_id', 'ol_i_id': 'i1_id', 'ol_i_id1': 'i2_id'}, inplace=True)
+    # print(row_counts)
+    customer_df.to_csv('customer_df.csv',index=False)
 
         cross_df = cross_df.reset_index(drop=True)
         two_item_df = two_item_df.reset_index(drop=True)
@@ -138,14 +147,15 @@ def process_related_customers_txns():
     '''
     
 if __name__ == '__main__':
-    
-    process_warehouse()
-    process_district()
-    process_items()
-    process_order()
-    process_order_line()
-    process_stock()
+    # process_warehouse()
+    # process_district()
+    # process_items()
+    # process_order()
+    # process_order_line()
+    # process_stock()
     process_customer()
+    # process_orders_by_customer()
+
     process_undelivered_orders_by_warehouse_district()
     process_related_customers_txns()
     

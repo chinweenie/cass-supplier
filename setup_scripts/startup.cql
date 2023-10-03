@@ -2,13 +2,16 @@ CREATE KEYSPACE IF NOT EXISTS supplier WITH REPLICATION = {'class':'SimpleStrate
 DROP TABLE IF EXISTS supplier.warehouses;
 DROP TABLE IF EXISTS supplier.districts;
 DROP TABLE IF EXISTS supplier.customers;
-DROP TABLE IF EXISTS supplier.orders_by_customer;
 DROP TABLE IF EXISTS supplier.orders;
 DROP TABLE IF EXISTS supplier.items;
 DROP TABLE IF EXISTS supplier.order_lines;
 DROP TABLE IF EXISTS supplier.stocks;
-DROP TYPE  IF EXISTS supplier.address;
-DROP TYPE  IF EXISTS supplier.name;
+DROP TYPE IF EXISTS supplier.address;
+DROP TYPE IF EXISTS supplier.name;
+
+-- Tables for denormalisation
+DROP TABLE IF EXISTS supplier.top_balances;
+DROP TABLE IF EXISTS supplier.orders_by_customer;
 
 CREATE TYPE supplier.name
     (
@@ -68,6 +71,21 @@ CREATE TABLE IF NOT EXISTS supplier.customers
     PRIMARY KEY ((C_W_ID), C_ID)
 );
 
+-- For transaction 7
+-- Decided to use a dummy partition key since the table roughly would be maintained at 30k records
+-- Single node partition should be able to handle the workload of payment transaction at 20%
+-- Another option is Materialized view, but this would add overhead for write updates
+-- Can do a benchmark on speed on these two options
+CREATE TABLE IF NOT EXISTS supplier.top_balances
+(
+    C_BALANCE DECIMAL,
+    C_ID      INT,
+    C_W_ID    INT,
+    C_D_ID    INT,
+    DUMMY_PARTITION_KEY TEXT,
+    PRIMARY KEY (DUMMY_PARTITION_KEY, C_BALANCE, C_ID, C_W_ID)
+) WITH CLUSTERING ORDER BY (C_BALANCE ASC);
+
 CREATE TABLE IF NOT EXISTS supplier.orders
 (
     O_W_ID       INT,
@@ -81,19 +99,6 @@ CREATE TABLE IF NOT EXISTS supplier.orders
     PRIMARY KEY ((O_W_ID), O_ID)
 );
 
-CREATE TABLE IF NOT EXISTS supplier.orders_by_customer
-(
-    O_W_ID       INT,
-    O_D_ID       INT,
-    O_ID         INT,
-    O_C_ID       INT,
-    O_CARRIER_ID INT,
-    O_OL_CNT     DECIMAL,
-    O_ALL_LOCAL  DECIMAL,
-    O_ENTRY_D    TIMESTAMP,
-    PRIMARY KEY ((O_C_ID), O_ID)
-) WITH CLUSTERING ORDER BY (O_ID DESC);
-
 CREATE TABLE IF NOT EXISTS supplier.items
 (
     I_ID    INT,
@@ -103,6 +108,18 @@ CREATE TABLE IF NOT EXISTS supplier.items
     I_DATA  VARCHAR,
     PRIMARY KEY (I_ID),
 );
+
+-- For Transaction 4
+CREATE TABLE IF NOT EXISTS supplier.orders_by_customer
+(
+    C_W_ID         INT,
+    C_D_ID         INT,
+    C_ID           INT,
+    O_ID           INT,
+    O_CARRIER_ID   INT,
+    O_ENTRY_D      TIMESTAMP,
+    PRIMARY KEY ((C_W_ID, C_D_ID, C_ID), O_ENTRY_D, O_ID)
+) WITH CLUSTERING ORDER BY (O_ENTRY_D DESC, O_ID DESC);
 
 CREATE TABLE IF NOT EXISTS supplier.order_lines
 (
@@ -116,7 +133,7 @@ CREATE TABLE IF NOT EXISTS supplier.order_lines
     OL_SUPPLY_W_ID INT,
     OL_QUANTITY    DECIMAL,
     OL_DIST_INFO   VARCHAR,
-    PRIMARY KEY ((OL_W_ID), OL_D_ID, OL_O_ID,  OL_NUMBER)
+    PRIMARY KEY ((OL_W_ID, OL_D_ID, OL_O_ID), OL_NUMBER)
 );
 
 CREATE TABLE IF NOT EXISTS supplier.stocks
