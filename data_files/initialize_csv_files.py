@@ -46,7 +46,7 @@ def process_items():
 
 def process_order():
     order_df = pandas.read_csv('order.csv', header=None)
-    order_df.columns = ['o_w_id', 'o_d_id', 'o_id', 'o_c_id', 'o_ol_cnt','o_carrier_id', 'o_all_local', 'o_entry_d']
+    order_df.columns = ['o_w_id', 'o_d_id', 'o_id', 'o_c_id', 'o_carrier_id', 'o_ol_cnt', 'o_all_local', 'o_entry_d']
     order_df.to_csv('order_df.csv',index=False)
 
 def process_orders_by_customer():
@@ -87,6 +87,7 @@ def process_customer():
     customer_df = customer_df.drop(['c_first', 'c_middle', 'c_last', 'street_1', 'street_2', 'city', 'state', 'zip'], axis=1)
     customer_df.to_csv('customer_df.csv',index=False)
 
+# for txn 2.3
 def process_undelivered_orders_by_warehouse_district():
     orders_by_wd_df = pandas.read_csv('order_df.csv')
     is_undelivered = orders_by_wd_df['o_carrier_id'].isnull()
@@ -95,6 +96,7 @@ def process_undelivered_orders_by_warehouse_district():
 
     undelivered_orders_by_wd_df.to_csv('undelivered_orders.csv', index=False)
 
+# for txn 2.8
 def process_related_customers_txns():
     orders_df = pandas.read_csv('order_df.csv')
     orders_df = orders_df.drop(['o_carrier_id', 'o_ol_cnt', 'o_all_local', 'o_entry_d'], axis=1)
@@ -147,14 +149,15 @@ def process_related_customers_txns():
     '''
     
 if __name__ == '__main__':
-    # process_warehouse()
-    # process_district()
-    # process_items()
-    # process_order()
-    # process_order_line()
-    # process_stock()
+    
+    process_warehouse()
+    process_district()
+    process_items()
+    process_order()
+    process_order_line()
+    process_stock()
     process_customer()
-    # process_orders_by_customer()
+    process_orders_by_customer()
 
     process_undelivered_orders_by_warehouse_district()
     process_related_customers_txns()

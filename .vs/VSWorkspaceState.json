@@ -1,8 +1,7 @@
 {
   "ExpandedNodes": [
-    "",
-    "\\setup_scripts"
+    ""
   ],
-  "SelectedNode": "\\docker-compose.yml",
+  "SelectedNode": "\\app.py",
   "PreviewInSolutionExplorer": false
 }
