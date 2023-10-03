@@ -12,6 +12,8 @@ DROP TYPE IF EXISTS supplier.name;
 -- Tables for denormalisation
 DROP TABLE IF EXISTS supplier.top_balances;
 DROP TABLE IF EXISTS supplier.orders_by_customer;
+DROP TABLE IF EXISTS supplier.undelivered_orders_by_warehouses_district;
+DROP TABLE IF EXISTS supplier.orders_by_warehouse_district_customer;
 
 CREATE TYPE supplier.name
     (
@@ -158,3 +160,23 @@ CREATE TABLE IF NOT EXISTS supplier.stocks
     PRIMARY KEY ((S_W_ID), S_I_ID, S_QUANTITY)
 ) WITH CLUSTERING ORDER BY (S_I_ID ASC, S_QUANTITY DESC);
 
+CREATE TABLE IF NOT EXISTS supplier.undelivered_orders_by_warehouse_district
+(
+    O_W_ID          INT,
+    O_D_ID          INT,
+    O_ID            INT,
+    O_C_ID          INT,
+    O_CARRIER_ID    INT,
+    PRIMARY KEY ((O_W_ID, O_D_ID), O_ID)
+) WITH CLUSTERING ORDER BY (O_ID ASC);
+
+CREATE TABLE IF NOT EXISTS supplier.orders_by_warehouse_district_customer
+(
+    W_ID        INT,
+    D_ID        INT,
+    C_ID        INT,
+    O_ID        INT,
+    OL_NUMBER   INT,
+    I_ID        INT,
+    PRIMARY KEY ((W_ID, D_ID, O_ID, OL_NUMBER), C_ID)
+) WITH CLUSTERING ORDER BY (C_ID ASC);
