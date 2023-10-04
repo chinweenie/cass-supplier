@@ -46,7 +46,7 @@ def process_items():
 
 def process_order():
     order_df = pandas.read_csv('order.csv', header=None)
-    order_df.columns = ['o_w_id', 'o_d_id', 'o_id', 'o_c_id', 'o_ol_cnt','o_carrier_id', 'o_all_local', 'o_entry_d']
+    order_df.columns = ['o_w_id', 'o_d_id', 'o_id', 'o_c_id', 'o_carrier_id', 'o_ol_cnt', 'o_all_local', 'o_entry_d']
     order_df.to_csv('order_df.csv',index=False)
 
 def process_orders_by_customer():
@@ -87,30 +87,79 @@ def process_customer():
     customer_df = customer_df.drop(['c_first', 'c_middle', 'c_last', 'street_1', 'street_2', 'city', 'state', 'zip'], axis=1)
     customer_df.to_csv('customer_df.csv',index=False)
 
-    top_balances_df = pandas.DataFrame({
-        'c_id': [],
-        'c_w_id': [],
-        'c_d_id': [],
-        'c_balance': [],
-        'dummy_partition_key': []
-    })
-    top_balances_df[['c_id', 'c_w_id', 'c_d_id', 'c_balance']] = customer_df[['c_id', 'c_w_id', 'c_d_id', 'c_balance']]
-    top_balances_df['dummy_partition_key'] = 'global'
-    top_balances_df.to_csv('top_balances_df.csv', index=False)
+# for txn 2.3
+def process_undelivered_orders_by_warehouse_district():
+    orders_by_wd_df = pandas.read_csv('order_df.csv')
+    is_undelivered = orders_by_wd_df['o_carrier_id'].isnull()
+    undelivered_orders_by_wd_df = orders_by_wd_df[is_undelivered]
+    undelivered_orders_by_wd_df = undelivered_orders_by_wd_df.drop(['o_ol_cnt', 'o_all_local', 'o_entry_d'], axis=1)
 
+    undelivered_orders_by_wd_df.to_csv('undelivered_orders.csv', index=False)
 
+# for txn 2.8
+def process_related_customers_txns():
+    orders_df = pandas.read_csv('order_df.csv')
+    orders_df = orders_df.drop(['o_carrier_id', 'o_ol_cnt', 'o_all_local', 'o_entry_d'], axis=1)
 
+    order_line_df = pandas.read_csv('order_line_df.csv')
+    order_line_df = order_line_df.drop(['ol_delivery_d', 'ol_amount', 'ol_supply_w_id', 'ol_quantity', 'ol_dist_info'], axis=1)
 
+    # rename columns in order and order_line for inner join
+    orders_df.rename(columns={'o_w_id': 'w_id', 'o_d_id': 'd_id', 'o_c_id': 'c_id'}, inplace=True)
+    order_line_df.rename(columns={'ol_w_id': 'w_id', 'ol_d_id': 'd_id', 'ol_o_id': 'o_id', 'ol_i_id': 'i_id'}, inplace=True)
 
+    orders_by_warehouse_district_customer_df = pandas.merge(orders_df, order_line_df, on=['w_id', 'd_id', 'o_id'])
+    
+    new_ordering = ['w_id', 'd_id', 'c_id', 'o_id', 'ol_number', 'i_id']
+    orders_by_warehouse_district_customer_df = orders_by_warehouse_district_customer_df[new_ordering]
+
+    # this table is clustered by these 3 columns, w_id, d_id, c_id
+    orders_by_warehouse_district_customer_df = orders_by_warehouse_district_customer_df.sort_values(by=['w_id', 'd_id', 'c_id'])
+
+    print('orders_by_warehouse_district_customer_df size: ' + str(orders_by_warehouse_district_customer_df.shape))
+    orders_by_warehouse_district_customer_df.to_csv('orders_by_warehouse_district_customer_df.csv', index=False)
+
+    '''
+    two_item_column_names = ['w_id', 'd_id', 'o_id', 'c_id', 'ol_number', 'i1_id', 'i2_id']
+    two_item_df = pandas.DataFrame(columns=two_item_column_names)
+    grouped = order_join_orderline_df.groupby(['w_id', 'd_id', 'o_id', 'o_c_id'])
+
+    group_count_tracker = 0
+
+    for name, group in grouped:
+        group_copy = group.copy()
+        group_copy.rename(columns={'w_id': 'w_id1', 'd_id': 'd_id1', 'o_id': 'o_id1','o_c_id': 'o_c_id1', 'ol_number': 'ol_number1', 'ol_i_id': 'ol_i_id1'}, inplace=True)
+        cross_df = pandas.merge(group, group_copy, how='cross')
+
+        item_filter = (cross_df['ol_i_id'] != cross_df['ol_i_id1'])
+        cross_df = cross_df[item_filter]
+
+    # print(row_counts)
+    customer_df.to_csv('customer_df.csv',index=False)
+
+        cross_df = cross_df.reset_index(drop=True)
+        two_item_df = two_item_df.reset_index(drop=True)
+        two_item_df = pandas.concat([two_item_df, cross_df], axis=0, ignore_index=True)
+        
+        group_count_tracker += 1
+        print("% processed: " + str(group_count_tracker / grouped.ngroups))
+    
+    print('two_item_df.shape: ' + str(two_item_df.shape))
+    two_item_df.to_csv('two_item_df.csv', index=False)
+    '''
+    
 if __name__ == '__main__':
-    # process_warehouse()
-    # process_district()
-    # process_items()
-    # process_order()
-    # process_order_line()
-    # process_stock()
+    
+    process_warehouse()
+    process_district()
+    process_items()
+    process_order()
+    process_order_line()
+    process_stock()
     process_customer()
-    # process_orders_by_customer()
+    process_orders_by_customer()
 
+    process_undelivered_orders_by_warehouse_district()
+    process_related_customers_txns()
     
 
