@@ -6,3 +6,6 @@ COPY supplier.stocks (s_w_id,s_i_id,s_quantity,s_ytd,s_order_cnt,s_remote_cnt,s_
 COPY supplier.customers (c_w_id,c_d_id,c_id,c_phone,c_since,c_credit,c_credit_lim,c_discount,c_balance,c_ytd_payment,c_payment_cnt,c_delivery_cnt,c_data,c_address,c_name) FROM 'customer_df.csv' WITH DELIMITER=',' AND HEADER=TRUE;
 COPY supplier.top_balances (c_id,c_w_id,c_d_id,c_balance,c_name,d_name,w_name,dummy_partition_key) FROM 'top_balances_df.csv' WITH DELIMITER=',' AND HEADER=TRUE;
 COPY supplier.orders_by_customer (c_w_id,c_d_id,c_id,o_id,o_carrier_id,o_entry_d) FROM 'orders_by_customer_df.csv' WITH DELIMITER=',' AND HEADER=TRUE;
+COPY supplier.undelivered_orders_by_warehouse_district (o_w_id,o_d_id,o_id,o_c_id, o_carrier_id) FROM 'undelivered_orders.csv' WITH DELIMITER=',' AND HEADER=TRUE;
+COPY supplier.orders_by_warehouse_district_customer (w_id,d_id,c_id,o_id,ol_number,i_id) FROM 'orders_by_warehouse_district_customer_df.csv' WITH DELIMITER=',' AND HEADER=TRUE;
+COPY supplier.stock_level_transaction (w_id,d_id,ol_o_id,ol_number,i_id,S_QUANTITY) FROM 'stock_level_transaction_table.csv' WITH DELIMITER=',' AND HEADER=TRUE;
