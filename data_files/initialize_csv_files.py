@@ -27,7 +27,6 @@ def process_warehouse():
                             'w_ytd']
     warehouse_df['w_address'] = warehouse_df.apply(merge_cells, axis=1)
     warehouse_df = warehouse_df.drop(['street_1', 'street_2', 'city', 'state', 'zip'], axis=1)
-    warehouse_df.columns = [col.upper() for col in warehouse_df.columns]
     warehouse_df.to_csv('warehouse_df.csv',index=False, sep=',')
 
 
@@ -87,6 +86,28 @@ def process_customer():
     customer_df = customer_df.drop(['c_first', 'c_middle', 'c_last', 'street_1', 'street_2', 'city', 'state', 'zip'], axis=1)
     customer_df.to_csv('customer_df.csv',index=False)
 
+
+def process_top_balances():
+    customer_df = pandas.read_csv('customer_df.csv').loc[:, ['c_id', 'c_w_id', 'c_d_id', 'c_balance', 'c_name']]
+    warehouses_df = pandas.read_csv('warehouse_df.csv').loc[:, ['w_id', 'w_name']]
+    districts_df = pandas.read_csv('district_df.csv').loc[:, ['d_w_id','d_id', 'd_name']]
+    merged_df = pandas.merge(customer_df, districts_df, left_on=['c_d_id', 'c_w_id'], right_on=['d_id', 'd_w_id'], how='inner')
+    final_merged_df = pandas.merge(merged_df, warehouses_df, left_on=['c_w_id'], right_on=['w_id'], how='inner')
+    final_merged_df['dummy_partition_key'] = 'global'
+    final_merged_df = final_merged_df.drop('d_id', axis=1)
+    final_merged_df = final_merged_df.drop('d_w_id', axis=1)
+    final_merged_df = final_merged_df.drop('w_id', axis=1)
+    final_merged_df.to_csv('top_balances_df.csv', index=False)
+
+def check_rows():
+    customer_rows = pandas.read_csv('customer.csv').shape[0]
+    print(f"The customers CSV file has {customer_rows} rows.")
+
+    customer_df_rows = pandas.read_csv('customer_df.csv').shape[0]
+    print(f"The customers df CSV file has {customer_df_rows} rows.")
+
+    num_rows = pandas.read_csv('top_balances_df.csv').shape[0]
+    print(f"The top_balances_df CSV file has {num_rows} rows.")
 # for txn 2.3
 def process_undelivered_orders_by_warehouse_district():
     orders_by_wd_df = pandas.read_csv('order_df.csv')
@@ -162,7 +183,7 @@ def process_storage_under_threshold():
     df.to_csv('storage_under_treshold.csv', index=False)
     
 if __name__ == '__main__':
-    
+    #check_rows()   
     process_warehouse()
     process_district()
     process_items()
@@ -171,10 +192,9 @@ if __name__ == '__main__':
     process_stock()
     process_customer()
     process_orders_by_customer()
-
+    process_top_balances()
     process_undelivered_orders_by_warehouse_district()
     process_related_customers_txns()
-
     process_storage_under_threshold()
     
 
