@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9307a6a5-d964-415f-a51b-72625b7f589c" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/sqldialects.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_files/initialize_csv_files.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_files/initialize_csv_files.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup_scripts/load_data.cql" beforeDir="false" afterPath="$PROJECT_DIR$/setup_scripts/load_data.cql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup_scripts/startup.cql" beforeDir="false" afterPath="$PROJECT_DIR$/setup_scripts/startup.cql" afterDir="false" />
-    </list>
+    <list default="true" id="9307a6a5-d964-415f-a51b-72625b7f589c" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
