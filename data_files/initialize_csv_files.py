@@ -147,6 +147,19 @@ def process_related_customers_txns():
     print('two_item_df.shape: ' + str(two_item_df.shape))
     two_item_df.to_csv('two_item_df.csv', index=False)
     '''
+
+# for txn 2.5
+def process_storage_under_threshold():
+    order_line_df = pandas.read_csv("df_files/order_line_df.csv")
+    stock_df = pandas.read_csv("df_files/stock_df.csv")
+
+    stock_df = stock_df[['s_w_id', 's_i_id', 's_quantity']].rename(
+        columns={'s_w_id': 'w_id', 's_i_id': 'i_id'})
+    order_line_df = order_line_df[['ol_w_id', 'ol_d_id', 'ol_o_id', 'ol_number', 'ol_i_id']].rename(
+        columns={'ol_w_id': 'w_id', 'ol_d_id': 'd_id', 'ol_i_id': 'i_id'})
+
+    df = pandas.merge(order_line_df, stock_df, how='inner')
+    df.to_csv('storage_under_treshold.csv', index=False)
     
 if __name__ == '__main__':
     
@@ -161,5 +174,7 @@ if __name__ == '__main__':
 
     process_undelivered_orders_by_warehouse_district()
     process_related_customers_txns()
+
+    process_storage_under_threshold()
     
 

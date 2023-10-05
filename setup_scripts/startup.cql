@@ -180,3 +180,14 @@ CREATE TABLE IF NOT EXISTS supplier.orders_by_warehouse_district_customer
     I_ID        INT,
     PRIMARY KEY ((W_ID, D_ID, O_ID, OL_NUMBER), C_ID)
 ) WITH CLUSTERING ORDER BY (C_ID ASC);
+
+CREATE TABLE IF NOT EXISTS supplier.stock_level_transaction
+(
+    W_ID         INT,
+    D_ID         INT,
+    OL_O_ID      INT,
+    OL_NUMBER    INT,
+    I_ID         INT,
+    S_QUANTITY   DECIMAL,
+    PRIMARY KEY ((W_ID,D_ID),OL_O_ID,OL_Number)
+) WITH CLUSTERING ORDER BY (OL_O_ID DESC);

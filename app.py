@@ -57,6 +57,27 @@ def process_p(db, values):
     # print(f"Check for latest top balances!")
     # print_res(latest_top_balances_res)
 
+def process_s(db, values):
+    if len(values) < 5:
+        print("Not enough arguments of P txn!")
+        return
+    w_id = int(sys.argv[1])
+    d_id = int(sys.argv[2])
+    T = Decimal(sys.argv[3])
+    L = int(sys.argv[4])
+
+    last_order_num_lookup_statement = db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
+    district_res = db.execute(last_order_num_lookup_statement, (w_id, d_id))
+    last_order_num = district_res[0].d_next_o_id
+
+    items_lookup_statement = db.prepare('select s_quantity, i_id from stock_level_transaction where w_id = ? and d_id = ? and ol_o_id >= ?')
+    items_res = db.execute(items_lookup_statement, (w_id, d_id, last_order_num-L))
+    low_quantity_item_set = set()
+    for row in items_res:
+        if (row.s_quantity < T):
+            low_quantity_item_set.add(row.i_id)
+
+    print(len(low_quantity_item_set))
 
 
 if __name__ == '__main__':
@@ -80,6 +101,8 @@ if __name__ == '__main__':
                 txn_keys = line.strip().split(',')
                 if txn_keys[0].lower() == 'p':
                     process_p(session, txn_keys)
+                if txn_keys[0].lower() == 's':
+                    process_s(session, txn_keys)
     except FileNotFoundError:
         print(f"File {filename} not found!")
 

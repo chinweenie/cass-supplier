@@ -8,3 +8,4 @@ COPY supplier.top_balances (c_id,c_w_id,c_d_id,c_balance,dummy_partition_key) FR
 COPY supplier.orders_by_customer (c_w_id,c_d_id,c_id,o_id,o_carrier_id,o_entry_d) FROM 'orders_by_customer_df.csv' WITH DELIMITER=',' AND HEADER=TRUE;
 COPY supplier.undelivered_orders_by_warehouse_district (o_w_id,o_d_id,o_id,o_c_id, o_carrier_id) FROM 'undelivered_orders.csv' WITH DELIMITER=',' AND HEADER=TRUE;
 COPY supplier.orders_by_warehouse_district_customer (w_id,d_id,c_id,o_id,ol_number,i_id) FROM 'orders_by_warehouse_district_customer_df.csv' WITH DELIMITER=',' AND HEADER=TRUE;
+COPY supplier.stock_level_transaction (w_id,d_id,ol_o_id,ol_number,i_id,S_QUANTITY) FROM 'stock_level_transaction_table.csv' WITH DELIMITER=',' AND HEADER=TRUE;
