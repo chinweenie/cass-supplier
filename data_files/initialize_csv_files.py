@@ -108,6 +108,7 @@ def check_rows():
 
     num_rows = pandas.read_csv('top_balances_df.csv').shape[0]
     print(f"The top_balances_df CSV file has {num_rows} rows.")
+
 # for txn 2.3
 def process_undelivered_orders_by_warehouse_district():
     orders_by_wd_df = pandas.read_csv('order_df.csv')
