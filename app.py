@@ -43,7 +43,7 @@ def process_o(db, values, output_file):
     if not order_items_res:
         return executed
     formatted_res = format_res({"o_id": last_order_id, "o_entry_d": res[0].o_entry_d, "o_carrier_id": res[0].o_carrier_id}, order_items_res)
-    print(formatted_res)
+    # print(formatted_res)
     output_file.write(formatted_res)
 
     executed = True
@@ -103,7 +103,7 @@ def process_p(db, values, output_file):
     latest_customer_res = db.execute(latest_customer)
 
     formatted_res = format_res(latest_customer_res, warehouses_res, districts_res, {'payment': payment})
-    print(formatted_res)
+    # print(formatted_res)
     output_file.write(formatted_res)
 
     executed = True
@@ -115,7 +115,7 @@ def process_t(db, values, output_file):
     statement = SimpleStatement(f"""SELECT c_name, c_balance, w_name, d_name FROM top_balances LIMIT 10;""")
     res = db.execute(statement)
     formatted_res = format_res(res)
-    print(formatted_res)
+    # print(formatted_res)
     output_file.write(formatted_res)
     executed = True
     return executed
@@ -177,12 +177,13 @@ if __name__ == '__main__':
                         txn_start_time = time.time()
 
                         txn_keys = line.strip().split(',')
+                        is_successfully_executed = False
                         if txn_keys[0].lower() == 'p':
                             is_successfully_executed = process_p(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 't':
                             is_successfully_executed = process_t(session, txn_keys, output_file)
-                        # if txn_keys[0].lower() == 's':
-                        #     is_successfully_executed = process_s(session, txn_keys)
+                        if txn_keys[0].lower() == 's':
+                            is_successfully_executed = process_s(session, txn_keys)
                         if txn_keys[0].lower() == 'o':
                             is_successfully_executed = process_o(session, txn_keys, output_file)
                         if is_successfully_executed:
@@ -190,7 +191,7 @@ if __name__ == '__main__':
                             latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms
                             latencies.append(latency)
                             total_transactions += 1
-
+            count += 1
     except FileNotFoundError:
         print(f"File  not found!")
 
