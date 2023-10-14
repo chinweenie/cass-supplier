@@ -1,11 +1,11 @@
 import time
 import statistics
-from collections import namedtuple
 
 from cassandra.cluster import Cluster
 import sys
 from decimal import Decimal
 from cassandra.query import BatchStatement, SimpleStatement
+
 
 def format_res(*results_sets):
     output = []
@@ -21,6 +21,35 @@ def format_res(*results_sets):
     return "\n".join(output)
 
 
+def process_o(db, values, output_file):
+    executed = False
+    if len(values) < 4:
+        print("Not enough arguments of O txn!")
+        return executed
+    c_w_id = int(values[1])
+    c_d_id = int(values[2])
+    c_id = int(values[3])
+
+    last_order_by_customer_statement = SimpleStatement(
+        """SELECT * FROM orders_by_customer WHERE c_w_id = %s AND c_d_id = %s AND c_id = %s LIMIT 1""")
+    res = db.execute(last_order_by_customer_statement, (c_w_id, c_d_id, c_id))
+    if not res:
+        return executed
+
+    last_order_id = res[0].o_id
+    last_order_items_statement = SimpleStatement(
+        """SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM order_lines WHERE ol_w_id = %s AND ol_d_id = %s AND ol_o_id = %s""")
+    order_items_res = db.execute(last_order_items_statement, (c_w_id, c_d_id, last_order_id))
+    if not order_items_res:
+        return executed
+    formatted_res = format_res({"o_id": last_order_id, "o_entry_d": res[0].o_entry_d, "o_carrier_id": res[0].o_carrier_id}, order_items_res)
+    # print(formatted_res)
+    output_file.write(formatted_res)
+
+    executed = True
+    return executed
+
+
 def process_p(db, values, output_file):
     executed = False
     if len(values) < 5:
@@ -31,7 +60,7 @@ def process_p(db, values, output_file):
     c_id = int(values[3])
     payment = Decimal(values[4])
 
-    user_lookup_statement = db.prepare("SELECT * FROM customers WHERE c_w_id = ? AND c_id = ?")
+    user_lookup_statement = SimpleStatement("SELECT * FROM customers WHERE c_w_id = %s AND c_id = %s")
     user_res = db.execute(user_lookup_statement, (c_w_id, c_id))
     if not user_res:
         return executed
@@ -63,7 +92,9 @@ def process_p(db, values, output_file):
         batch.add(delete_query, (c_w_id, old_balance, c_id))
         insert_query = db.prepare(
             "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, dummy_partition_key, c_name, w_name, d_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-        batch.add(insert_query, (new_balance, c_w_id, c_id, c_d_id, 'global', user_res[0].c_name, warehouses_res[0].w_name ,districts_res[0].d_name))
+        batch.add(insert_query, (
+        new_balance, c_w_id, c_id, c_d_id, 'global', user_res[0].c_name, warehouses_res[0].w_name,
+        districts_res[0].d_name))
         db.execute(batch)
     except:
         return executed
@@ -72,7 +103,7 @@ def process_p(db, values, output_file):
     latest_customer_res = db.execute(latest_customer)
 
     formatted_res = format_res(latest_customer_res, warehouses_res, districts_res, {'payment': payment})
-    print(formatted_res)
+    # print(formatted_res)
     output_file.write(formatted_res)
 
     executed = True
@@ -84,43 +115,50 @@ def process_t(db, values, output_file):
     statement = SimpleStatement(f"""SELECT c_name, c_balance, w_name, d_name FROM top_balances LIMIT 10;""")
     res = db.execute(statement)
     formatted_res = format_res(res)
-    print(formatted_res)
+    # print(formatted_res)
     output_file.write(formatted_res)
     executed = True
     return executed
 
+
 def process_s(db, values):
+    executed = False
     if len(values) < 5:
         print("Not enough arguments of P txn!")
-        return
-    w_id = int(sys.argv[1])
-    d_id = int(sys.argv[2])
-    T = Decimal(sys.argv[3])
-    L = int(sys.argv[4])
+        return executed
+    w_id = int(values[1])
+    d_id = int(values[2])
+    T = Decimal(values[3])
+    L = int(values[4])
 
     last_order_num_lookup_statement = db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
     district_res = db.execute(last_order_num_lookup_statement, (w_id, d_id))
     last_order_num = district_res[0].d_next_o_id
 
-    items_lookup_statement = db.prepare('select s_quantity, i_id from stock_level_transaction where w_id = ? and d_id = ? and ol_o_id >= ?')
-    items_res = db.execute(items_lookup_statement, (w_id, d_id, last_order_num-L))
+    items_lookup_statement = db.prepare(
+        'select s_quantity, i_id from stock_level_transaction where w_id = ? and d_id = ? and ol_o_id >= ?')
+    items_res = db.execute(items_lookup_statement, (w_id, d_id, last_order_num - L))
     low_quantity_item_set = set()
     for row in items_res:
         if (row.s_quantity < T):
             low_quantity_item_set.add(row.i_id)
 
     print(len(low_quantity_item_set))
+    executed = True
+    return executed
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print("You must provide exactly 2 arguments!")
+    print(sys.argv)
+    if len(sys.argv) != 6:
+        print("You must provide exactly 5 arguments!")
         sys.exit(1)
 
     ip_address = sys.argv[1]
-    filename = sys.argv[2]
+    filenames = [sys.argv[2], sys.argv[3], sys.argv[4]]
+
     print(f"Received IP Address: {ip_address}")
-    print(f"Received filename: {filename}")
+    print(f"Received filename: {filenames}")
     cluster = Cluster([ip_address])
     session = cluster.connect()
     session.set_keyspace('supplier')
@@ -130,33 +168,32 @@ if __name__ == '__main__':
     start_time = time.time()
 
     try:
-        with open(filename, 'r') as file:
+        count = 0
+        while count < len(filenames):
             with open('stdout', 'w') as output_file:
-                for line in file:
-                    print(line.strip())
-                    txn_start_time = time.time()
-                    txn_keys = line.strip().split(',')
-                    if txn_keys[0].lower() == 'p':
-                        is_successfully_executed = process_p(session, txn_keys, output_file)
-                    if txn_keys[0].lower() == 't':
-                        is_successfully_executed = process_t(session, txn_keys, output_file)
-                    if txn_keys[0].lower() == 's':
-                        is_successfully_executed = process_s(session, txn_keys)
-                    if is_successfully_executed:
-                        txn_end_time = time.time()
-                        latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms
-                        latencies.append(latency)
-                        total_transactions += 1
+                with open(filenames[count], 'r') as file:
+                    for line in file:
+                        print(line.strip())
+                        txn_start_time = time.time()
 
-            for line in file:
-                print(line.strip())
-                txn_keys = line.strip().split(',')
-                if txn_keys[0].lower() == 'p':
-                    process_p(session, txn_keys)
-                if txn_keys[0].lower() == 's':
-                    process_s(session, txn_keys)
+                        txn_keys = line.strip().split(',')
+                        is_successfully_executed = False
+                        if txn_keys[0].lower() == 'p':
+                            is_successfully_executed = process_p(session, txn_keys, output_file)
+                        if txn_keys[0].lower() == 't':
+                            is_successfully_executed = process_t(session, txn_keys, output_file)
+                        if txn_keys[0].lower() == 's':
+                            is_successfully_executed = process_s(session, txn_keys)
+                        if txn_keys[0].lower() == 'o':
+                            is_successfully_executed = process_o(session, txn_keys, output_file)
+                        if is_successfully_executed:
+                            txn_end_time = time.time()
+                            latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms
+                            latencies.append(latency)
+                            total_transactions += 1
+            count += 1
     except FileNotFoundError:
-        print(f"File {filename} not found!")
+        print(f"File  not found!")
 
     cluster.shutdown()
     elapsed_time = time.time() - start_time  # In seconds
