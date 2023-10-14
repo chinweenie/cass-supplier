@@ -5,7 +5,7 @@ from cassandra.cluster import Cluster
 import sys
 from decimal import Decimal
 from cassandra.query import BatchStatement, SimpleStatement
-
+from datetime import datetime
 
 def format_res(*results_sets):
     output = []
@@ -124,7 +124,7 @@ def process_t(db, values, output_file):
 def process_s(db, values):
     executed = False
     if len(values) < 5:
-        print("Not enough arguments of P txn!")
+        print("Not enough arguments of S txn!")
         return executed
     w_id = int(values[1])
     d_id = int(values[2])
@@ -146,6 +146,84 @@ def process_s(db, values):
     print(len(low_quantity_item_set))
     executed = True
     return executed
+
+
+# Processes the oldest undelivered order for all 10 districts of each warehouse
+# The oldest undelivered order is determined by the smallest O_ID
+def process_d(db, values, output_file):
+    executed = False
+    if len(values) < 3:
+        print("Not enough arguments for txd D!")
+        return executed
+
+    w_id = int(values[1])
+    carrier_id = int(values[2])
+
+    # prepared statement
+    oldest_undel_order_per_wid_did = db.prepare("""SELECT * FROM undelivered_orders_by_warehouse_district WHERE 
+        o_w_id = ? AND o_d_id = ? LIMIT 1""")
+
+    oldest_undelivered_orders = []
+    # d_id has values from 1-10 for each warehouse
+    for d_id in range(1, 11):
+        oldest_undelivered_order = db.execute(oldest_undel_order_per_wid_did, [w_id, d_id])
+        oldest_undelivered_orders.append(oldest_undelivered_order)
+
+    if (len(oldest_undelivered_orders) < 10):
+        return executed
+
+
+    update_carrier_stmt = db.prepare("UPDATE orders SET o_carrier_id = ? WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?")
+    get_order_lines_stmt = db.prepare("SELECT * FROM order_lines WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ?")
+    update_order_lines_stmt = db.prepare("""UPDATE order_lines SET ol_delivery_d = ? WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? 
+        AND ol_number = ?""")
+    update_customer_stmt = db.prepare("""UPDATE customers SET c_balance = c_balance + ?, c_delivery_cnt = c_delivery_cnt + 1
+        WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?""")
+
+
+    # update carrier_id in orders for each delivered order
+    # update all order lines for the order to current date and time
+    # update customer balance by total price of the orders
+    # update customer delivery count by 1
+    for order in oldest_undelivered_orders:
+        o_w_id = order.o_w_id
+        o_d_id = order.o_d_id
+        o_id = order.o_id
+        o_c_id = order.o_c_id
+        
+        # update carrier_id in orders table
+        db.execute(update_carrier_stmt, [carrier_id, o_w_id, o_d_id,o_id])
+
+        # get order_lines corresponding to the order
+        order_lines = db.execute(get_order_lines_stmt, [o_w_id, o_d_id, o_id])
+
+        # update all order_lines to current date and time
+        curr_timestamp = datetime.now()
+        total_order_amount = 0
+
+        for ol in order_lines:
+            ol_number = ol.ol_number
+
+            # update order delivery date time
+            db.execute(update_order_lines_stmt, [curr_timestamp, o_w_id, o_d_id, o_id, ol_number])
+
+            # calculate total sum of order
+            total_order_amount = total_order_amount + float(ol.ol_amount)
+
+            # update customer tables with total amounts and delivery count
+            db.execute(update_customer_stmt, [total_order_amount, o_w_id, o_d_id, o_c_id])
+
+
+    delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
+        WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
+    # delete delivered orders from undelivered orders table
+    for order in oldest_undelivered_orders:
+        db.execute(delete_order_stmt, [order.o_w_id, order.o_d_id, order.o_id])
+
+    executed = True
+    return executed
+            
+         
 
 
 if __name__ == '__main__':
@@ -186,6 +264,12 @@ if __name__ == '__main__':
                             is_successfully_executed = process_s(session, txn_keys)
                         if txn_keys[0].lower() == 'o':
                             is_successfully_executed = process_o(session, txn_keys, output_file)
+                        if txn_keys[0].lower() == 'd':
+                            is_successfully_executed = process_d(session, txn_keys, output_file)
+
+                            if (!is_successfully_executed):
+                                print("failed txn d")
+
                         if is_successfully_executed:
                             txn_end_time = time.time()
                             latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms

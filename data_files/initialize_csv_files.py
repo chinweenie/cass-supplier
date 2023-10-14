@@ -172,8 +172,8 @@ def process_related_customers_txns():
 
 # for txn 2.5
 def process_storage_under_threshold():
-    order_line_df = pandas.read_csv("df_files/order_line_df.csv")
-    stock_df = pandas.read_csv("df_files/stock_df.csv")
+    order_line_df = pandas.read_csv("order_line_df.csv")
+    stock_df = pandas.read_csv("stock_df.csv")
 
     stock_df = stock_df[['s_w_id', 's_i_id', 's_quantity']].rename(
         columns={'s_w_id': 'w_id', 's_i_id': 'i_id'})
@@ -184,6 +184,7 @@ def process_storage_under_threshold():
     df.to_csv('storage_under_treshold.csv', index=False)
     
 if __name__ == '__main__':
+    '''
     #check_rows()   
     process_warehouse()
     process_district()
@@ -196,6 +197,8 @@ if __name__ == '__main__':
     process_top_balances()
     process_undelivered_orders_by_warehouse_district()
     process_related_customers_txns()
+    '''    
     process_storage_under_threshold()
     
 
+    print('csv initialization done')

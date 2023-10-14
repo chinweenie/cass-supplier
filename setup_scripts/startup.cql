@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS supplier.customers
     C_PAYMENT_CNT  INT,
     C_DELIVERY_CNT INT,
     C_DATA         VARCHAR,
-    PRIMARY KEY ((C_W_ID), C_ID)
+    PRIMARY KEY ((C_W_ID), C_D_ID, C_ID)
 );
 
 -- For transaction 7
