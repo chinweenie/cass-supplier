@@ -1,8 +1,10 @@
+import pandas as pd
 import time
 import statistics
+import sys
+
 
 from cassandra.cluster import Cluster
-import sys
 from decimal import Decimal
 from cassandra.query import BatchStatement, SimpleStatement
 from datetime import datetime
@@ -223,7 +225,50 @@ def process_d(db, values, output_file):
     executed = True
     return executed
             
-         
+
+# Finds related customers
+def process_ r(db, values, output_file):
+    executed = False
+    w_id = int(values[1])
+    d_id = int(values[2])
+    c_id = int(values[3])
+
+    get_items_stmt = db.prepare("SELECT * FROM orders_by_warehouse_district_customer WHERE w_id = ? AND d_id = ? AND c_id = ?")
+    items_table = db.execute(get_items_stmt, [w_id, d_id, c_id])
+
+    executed = True
+    
+    # work with df from now, since we'll be joining
+    items_df = pd.DataFrame(items_table)
+    temp_items_df = items_df.rename(columns={'i_id': 'i2_id'})
+
+    items_df = items_df.rename(columns={'i_id': 'i1_id'})
+
+    # join 2 items table to get a table with 2 items per row given an order
+    2_items_df = items_df.merge(temp_items_df, on=['w_id', 'd_id', 'c_id', 'o_id', 'ol_id'], how='inner')
+
+    # filter rows with 2 of the same items
+    2_items_df = 2_items_df[2_items_df['i1_id'] != 2_items_df['i2_id']]
+
+    # join 2 items table to get a table with 2 different customers with the same items in their order`
+    temp_2_items_df = 2_items_df.rename(columns={'w_id': 'w2_id', 'd_id': 'd2_id',
+        'c_id': 'c2_id', 'o_id': 'o2_id', 'ol_number': 'ol_number2'})
+
+    2_items_df = 2_items_df.rename(columns={'w_id': 'w1_id', 'd_id': 'd1_id',
+        'c_id': 'c1_id', 'o_id': 'o1_id', 'ol_number': 'ol_number1'})
+    
+    r_c_i = 2_items_df.merge(temp_2_items_df, on=['i1_id', 'i2_id'], how='inner')
+    
+    # filter rows where customers are the same
+    related_customers = r_c_i[r_c_i['w1_id'] != r_c_i['w2_id']]
+
+    # write customer identifier
+    output_file.write(f"C_W_ID: {w_id} C_D_ID: {d_id} C_ID: {c_id}")
+
+    formatted_res = format_res(related_customers)
+    output_file.write(formattted_res)
+
+    return executed
 
 
 if __name__ == '__main__':
@@ -266,10 +311,12 @@ if __name__ == '__main__':
                             is_successfully_executed = process_o(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 'd':
                             is_successfully_executed = process_d(session, txn_keys, output_file)
-
                             if (!is_successfully_executed):
                                 print("failed txn d")
-
+                        if txn_keys[0].lower() == 'r':
+                            is_successfully_executed = process_r(session, txn_keys, output_file)
+                            if (!is_successfully_executed):
+                                print("failed txn r")
                         if is_successfully_executed:
                             txn_end_time = time.time()
                             latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms
