@@ -12,7 +12,16 @@ def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
 
         # Begin transaction
         conn.autocommit = False
-        
+        # Step0: Lock the orders, customer, and order_line tables
+        lock_orders_query = sql.SQL("LOCK TABLE orders IN SHARE MODE")
+        cur.execute(lock_orders_query)
+
+        lock_customer_query = sql.SQL("LOCK TABLE customer IN SHARE MODE")
+        cur.execute(lock_customer_query)
+
+        lock_order_line_query = sql.SQL("LOCK TABLE order_line IN SHARE MODE")
+        cur.execute(lock_order_line_query)
+
         # step1: get customer information with customer identifier
         customer_info_query = sql.SQL("""
             select c_first, c_middle, c_last, c_balance from customer

@@ -13,6 +13,15 @@ def related_customer(host, database, user, password, c_w_id, c_d_id, c_id):
         # Begin transaction
         conn.autocommit = False
         
+        # Step0: Lock the orders, customer, and order_line tables
+        lock_orders_query = sql.SQL("LOCK TABLE orders IN SHARE MODE")
+        cur.execute(lock_orders_query)
+
+        lock_customer_query = sql.SQL("LOCK TABLE customer IN SHARE MODE")
+        cur.execute(lock_customer_query)
+
+        lock_order_line_query = sql.SQL("LOCK TABLE order_line IN SHARE MODE")
+        cur.execute(lock_order_line_query)
         
         # need to split complex join down 
         # step1: Select candidate customer from customer table

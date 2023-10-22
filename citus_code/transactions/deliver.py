@@ -13,12 +13,22 @@ def deliver(host, database, user, password, warehouse_id, carrier_id):
         # Begin the transaction
         conn.autocommit = False
 
+        # Step0: Lock the orders, customer, and order_line tables
+        lock_orders_query = sql.SQL("LOCK TABLE orders IN EXCLUSIVE MODE")
+        cur.execute(lock_orders_query)
+
+        lock_customer_query = sql.SQL("LOCK TABLE customer IN EXCLUSIVE MODE")
+        cur.execute(lock_customer_query)
+
+        lock_order_line_query = sql.SQL("LOCK TABLE order_line IN EXCLUSIVE MODE")
+        cur.execute(lock_order_line_query)
+
         # Processing steps for each district (1 to 10)
         for district_no in range(1, 11):
             # Step 1: Find the smallest order number with O_CARRIER_ID = null
             smallest_order_query = sql.SQL("""
-                SELECT MIN(o_id) FROM orders 
-                WHERE o_w_id = %s AND o_d_id = %s AND o_carrier_id IS NULL
+                select min(o_id) from orders 
+                where o_w_id = %s and o_d_id = %s and o_carrier_id is NULL
             """).format(sql.Literal(warehouse_id), sql.Literal(district_no))
             cur.execute(smallest_order_query, (warehouse_id, district_no))
             smallest_order_number = cur.fetchone()[0]
@@ -26,26 +36,26 @@ def deliver(host, database, user, password, warehouse_id, carrier_id):
             if smallest_order_number is not None:
                 # Step 2: Update order X by setting O_CARRIER_ID to CARRIER_ID
                 update_order_query = sql.SQL("""
-                    UPDATE orders SET o_carrier_id = %s 
-                    WHERE o_w_id = %s AND o_d_id = %s AND o_id = %s
+                    update orders set o_carrier_id = %s 
+                    where o_w_id = %s and o_d_id = %s and o_id = %s
                 """).format(sql.Literal(warehouse_id), sql.Literal(district_no), sql.Literal(smallest_order_number))
                 cur.execute(update_order_query, (carrier_id, warehouse_id, district_no, smallest_order_number))
 
                 # Step 3: Update order-lines in X by setting OL_DELIVERY_D to current date and time
                 update_order_lines_query = sql.SQL("""
-                    UPDATE order_line SET ol_delivery_d = NOW() 
-                    WHERE ol_w_id = %s AND ol_d_id = %s AND ol_o_id = %s
+                    update order_line set ol_delivery_d = NOW() 
+                    where ol_w_id = %s and ol_d_id = %s and ol_o_id = %s
                 """).format(sql.Literal(warehouse_id), sql.Literal(district_no), sql.Literal(smallest_order_number))
                 cur.execute(update_order_lines_query, (warehouse_id, district_no, smallest_order_number))
 
                 # Step 4: Update customer C
                 update_customer_query = sql.SQL("""
-                    UPDATE customer SET 
-                        c_balance = c_balance + (SELECT SUM(ol_amount) FROM order_line WHERE ol_w_id = %s AND ol_d_id = %s AND ol_o_id = %s),
+                    update customer set 
+                        c_balance = c_balance + (select sum(ol_amount) from order_line where ol_w_id = %s and ol_d_id = %s and ol_o_id = %s),
                         c_delivery_cnt = c_delivery_cnt + 1
-                    WHERE c_w_id = %s AND c_d_id = %s AND c_id = (
-                        SELECT o_c_id FROM orders 
-                        WHERE o_w_id = %s AND o_d_id = %s AND o_id = %s
+                    where c_w_id = %s and c_d_id = %s and c_id = (
+                        select o_c_id from orders 
+                        where o_w_id = %s and o_d_id = %s and o_id = %s
                     )
                 """).format(sql.Literal(warehouse_id), sql.Literal(district_no), sql.Literal(smallest_order_number),
                             sql.Literal(warehouse_id), sql.Literal(district_no), sql.Literal(warehouse_id), 
@@ -74,4 +84,4 @@ def deliver(host, database, user, password, warehouse_id, carrier_id):
 
 # Example usage
 deliver(host="localhost", database="project", user="cs4224d", password="1234", 
-        warehouse_id=1, carrier_id=1)
+        warehouse_id=3, carrier_id=1)
