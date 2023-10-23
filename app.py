@@ -1,3 +1,4 @@
+import os
 import time
 import statistics
 
@@ -166,12 +167,13 @@ if __name__ == '__main__':
     total_transactions = 0
     latencies = []  # List to store latency of each transaction
     start_time = time.time()
-
+    directory_path = '/temp/teamd-cass'
     try:
         count = 0
         while count < len(filenames):
             with open('stdout', 'w') as output_file:
-                with open(filenames[count], 'r') as file:
+                file_path = os.path.join(directory_path, filenames[count])
+                with open(file_path, 'r') as file:
                     for line in file:
                         print(line.strip())
                         txn_start_time = time.time()
