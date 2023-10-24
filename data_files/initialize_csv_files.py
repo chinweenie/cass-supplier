@@ -172,8 +172,8 @@ def process_related_customers_txns():
 
 # for txn 2.5
 def process_storage_under_threshold():
-    order_line_df = pandas.read_csv("df_files/order_line_df.csv")
-    stock_df = pandas.read_csv("df_files/stock_df.csv")
+    order_line_df = pandas.read_csv("order_line_df.csv")
+    stock_df = pandas.read_csv("stock_df.csv")
 
     stock_df = stock_df[['s_w_id', 's_i_id', 's_quantity']].rename(
         columns={'s_w_id': 'w_id', 's_i_id': 'i_id'})
@@ -182,7 +182,41 @@ def process_storage_under_threshold():
 
     df = pandas.merge(order_line_df, stock_df, how='inner')
     df.to_csv('storage_under_treshold.csv', index=False)
+
+# for txn 2.6
+def process_popular_items():
+    district_df = pandas.read_csv("district_df.csv")
+    order_df = pandas.read_csv("order_df.csv")
+    customer_df = pandas.read_csv("customer_df.csv")
+    item_df = pandas.read_csv("item_df.csv")
+    order_line_df = pandas.read_csv("order_line_df.csv")
+
+    district_df = district_df.loc[:, ['d_w_id', 'd_id', 'd_next_o_id']].rename(
+    columns={'d_w_id': 'w_id'})
+
+    order_df = order_df.loc[:, ['o_w_id', 'o_d_id', 'o_id', 'o_c_id', 'o_entry_d']].rename(
+        columns={'o_w_id': 'w_id', 'o_d_id': 'd_id', 'o_c_id': 'c_id'})
+
+    customer_df = customer_df.loc[:, ['c_w_id', 'c_d_id', 'c_id', 'c_name']].rename(
+        columns={'c_w_id': 'w_id', 'c_d_id': 'd_id'})
+
+    item_df = item_df.loc[:, ['i_id', 'i_name']]
+
+    order_line_df = order_line_df.loc[:, ['ol_w_id', 'ol_d_id', 'ol_o_id', 'ol_number', 'ol_i_id', 'ol_quantity']].rename(
+        columns={'ol_w_id': 'w_id', 'ol_d_id': 'd_id', 'ol_o_id': 'o_id', 'ol_i_id': 'i_id'})
     
+    popular_order_line_df = order_line_df
+    popular_order_line_df['Rank'] = popular_order_line_df.groupby(
+        by=['w_id', 'd_id', 'o_id'])['ol_quantity'].rank('dense')
+    popular_order_line_df = popular_order_line_df[popular_order_line_df['Rank'] == 1.0]
+
+    df = pandas.merge(district_df, order_df, how='inner')
+    df = pandas.merge(df, customer_df, how='inner')
+    df = pandas.merge(df, popular_order_line_df, how='inner')
+    df = pandas.merge(df, item_df, how='inner')
+    df = df.drop(['c_id', 'Rank', 'd_next_o_id'], axis=1)
+    df.to_csv('popular_items_table.csv', index=False)
+
 if __name__ == '__main__':
     #check_rows()   
     process_warehouse()

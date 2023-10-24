@@ -6,6 +6,7 @@ from cassandra.cluster import Cluster
 import sys
 from decimal import Decimal
 from cassandra.query import BatchStatement, SimpleStatement
+import pandas as pd
 
 
 def format_res(*results_sets):
@@ -14,6 +15,9 @@ def format_res(*results_sets):
         if isinstance(results, dict):  # Handle dictionary directly
             for key, value in results.items():
                 output.append(f"{key}: {value}")
+        elif isinstance(results, pd.DataFrame):  # Handle dataframe
+            str = results.to_string(index=False)
+            output.append(str)
         else:  # Handle namedtuples
             for row in results:
                 for column_name, value in row._asdict().items():
@@ -122,10 +126,10 @@ def process_t(db, values, output_file):
     return executed
 
 
-def process_s(db, values):
+def process_s(db, values, output_file):
     executed = False
     if len(values) < 5:
-        print("Not enough arguments of P txn!")
+        print("Not enough arguments of S txn!")
         return executed
     w_id = int(values[1])
     d_id = int(values[2])
@@ -139,14 +143,49 @@ def process_s(db, values):
     items_lookup_statement = db.prepare(
         'select s_quantity, i_id from stock_level_transaction where w_id = ? and d_id = ? and ol_o_id >= ?')
     items_res = db.execute(items_lookup_statement, (w_id, d_id, last_order_num - L))
+    
     low_quantity_item_set = set()
     for row in items_res:
         if (row.s_quantity < T):
             low_quantity_item_set.add(row.i_id)
 
     print(len(low_quantity_item_set))
+    output_file.write(len(low_quantity_item_set))
     executed = True
     return executed
+
+def process_i(db, values, output_file):
+    executed = False
+    if len(values) < 4:
+        print("You must provide exactly 4 arguments!")
+        return executed
+
+    w_id = int(values[1])
+    d_id = int(values[2])
+    L = int(values[3])
+    
+    last_order_num_lookup_statement = db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
+    N_res = db.execute(last_order_num_lookup_statement, (w_id, d_id))
+    N = N_res[0].d_next_o_id
+
+    last_L_order_lookup_statement = db.prepare('select o_id, o_entry_d, c_name, i_id, i_name, ol_quantity from popular_item_transaction where w_id=? and d_id=? and o_id >= ?;')
+    S_res = db.execute(last_L_order_lookup_statement, (w_id, d_id, N-L))
+    S_df = pd.DataFrame(list(S_res))
+
+    s_without_id_df = S_df.drop(['i_id'], axis=1)
+
+    p_df = S_df[['i_id','i_name']]
+    p_df = p_df.value_counts().reset_index().rename(columns={"count":"percentage"})
+    p_df['percentage'] = (p_df['percentage']*100/L).round(2)
+    p_df = p_df.drop(['i_id'], axis=1)
+
+    formatted_res = format_res({"W_ID": w_id, "D_ID": d_id, "L": L},
+                                s_without_id_df,
+                                p_df)
+    output_file.write(formatted_res)
+    executed = True
+    return executed
+
 
 
 if __name__ == '__main__':
@@ -182,12 +221,17 @@ if __name__ == '__main__':
 
                         txn_keys = line.strip().split(',')
                         is_successfully_executed = False
+                        # if txn_keys[0].lower() == 'N':
+                            # handle m more lines 
+                            # is_successfully_executed = process_n(session, txn_keys, output_file) 
                         if txn_keys[0].lower() == 'p':
                             is_successfully_executed = process_p(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 't':
                             is_successfully_executed = process_t(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 's':
-                            is_successfully_executed = process_s(session, txn_keys)
+                            is_successfully_executed = process_s(session, txn_keys, output_file)
+                        if txn_keys[0].lower() == 'i':
+                            is_successfully_executed = process_i(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 'o':
                             is_successfully_executed = process_o(session, txn_keys, output_file)
                         if is_successfully_executed:
