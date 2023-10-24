@@ -1,6 +1,7 @@
 #!/bin/bash
 
 
+source ~/.bashrc
 echo $1
 IFS=' ' read -ra ARGS <<< "$1"
-python /temp/teamd-cass/app.py "${ARGS[@]}"
+python $CASS_DIR/xact_files/app.py "${ARGS[@]}"

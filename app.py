@@ -61,8 +61,8 @@ def process_p(db, values, output_file):
     c_id = int(values[3])
     payment = Decimal(values[4])
 
-    user_lookup_statement = SimpleStatement("SELECT * FROM customers WHERE c_w_id = %s AND c_id = %s")
-    user_res = db.execute(user_lookup_statement, (c_w_id, c_id))
+    user_lookup_statement = SimpleStatement("SELECT * FROM customers WHERE c_w_id = %s AND c_d_id = %s AND c_id = %s")
+    user_res = db.execute(user_lookup_statement, (c_w_id, c_d_id, c_id))
     if not user_res:
         return executed
 
@@ -83,14 +83,14 @@ def process_p(db, values, output_file):
 
     try:
         update_customer_statement = db.prepare(
-            "UPDATE customers SET c_balance = ?, c_ytd_payment = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_id = ?")
-        bound_statement = update_customer_statement.bind((new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_id))
+            "UPDATE customers SET c_balance = ?, c_ytd_payment = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
+        bound_statement = update_customer_statement.bind((new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_d_id, c_id))
         db.execute(bound_statement)
 
         batch = BatchStatement()
         delete_query = db.prepare(
-            "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_id = ? AND dummy_partition_key = 'global'")
-        batch.add(delete_query, (c_w_id, old_balance, c_id))
+            "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ? AND dummy_partition_key = 'global'")
+        batch.add(delete_query, (c_w_id, old_balance, c_d_id, c_id))
         insert_query = db.prepare(
             "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, dummy_partition_key, c_name, w_name, d_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
         batch.add(insert_query, (
@@ -100,7 +100,7 @@ def process_p(db, values, output_file):
     except:
         return executed
 
-    latest_customer = SimpleStatement(f"""SELECT * FROM customers WHERE c_w_id={c_w_id} AND c_id={c_id}""")
+    latest_customer = SimpleStatement(f"""SELECT * FROM customers WHERE c_w_id={c_w_id} AND c_d_id={c_d_id} AND c_id={c_id}""")
     latest_customer_res = db.execute(latest_customer)
 
     formatted_res = format_res(latest_customer_res, warehouses_res, districts_res, {'payment': payment})
@@ -156,24 +156,26 @@ if __name__ == '__main__':
         sys.exit(1)
 
     ip_address = sys.argv[1]
-    filenames = [sys.argv[2], sys.argv[3], sys.argv[4]]
+    filenames = [sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]]
 
     print(f"Received IP Address: {ip_address}")
     print(f"Received filename: {filenames}")
+    print(os.getcwd())
+
     cluster = Cluster([ip_address])
     session = cluster.connect()
     session.set_keyspace('supplier')
+    directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
 
     total_transactions = 0
     latencies = []  # List to store latency of each transaction
     start_time = time.time()
-    directory_path = '/temp/teamd-cass'
     try:
         count = 0
         while count < len(filenames):
             with open('stdout', 'w') as output_file:
-                file_path = os.path.join(directory_path, filenames[count])
-                with open(file_path, 'r') as file:
+                dir_filename = os.path.join(directory, filenames[count])
+                with open(dir_filename, 'r') as file:
                     for line in file:
                         print(line.strip())
                         txn_start_time = time.time()
@@ -194,23 +196,25 @@ if __name__ == '__main__':
                             latencies.append(latency)
                             total_transactions += 1
             count += 1
-    except FileNotFoundError:
-        print(f"File  not found!")
+        cluster.shutdown()
+        elapsed_time = time.time() - start_time  # In seconds
+        throughput = total_transactions / elapsed_time  # Transactions per second
 
-    cluster.shutdown()
-    elapsed_time = time.time() - start_time  # In seconds
-    throughput = total_transactions / elapsed_time  # Transactions per second
+        avg_latency = statistics.mean(latencies)
+        median_latency = statistics.median(latencies)
+        perc_95_latency = statistics.quantiles(latencies, n=100)[94]  # 95th percentile
+        perc_99_latency = statistics.quantiles(latencies, n=100)[98]  # 99th percentile
 
-    avg_latency = statistics.mean(latencies)
-    median_latency = statistics.median(latencies)
-    perc_95_latency = statistics.quantiles(latencies, n=100)[94]  # 95th percentile
-    perc_99_latency = statistics.quantiles(latencies, n=100)[98]  # 99th percentile
+        with open("stderr", "w") as f:
+            f.write(f"Total number of transactions processed: {total_transactions}\n")
+            f.write(f"Total elapsed time for processing the transactions: {elapsed_time:.2f} seconds\n")
+            f.write(f"Transaction throughput: {throughput:.2f} transactions/second\n")
+            f.write(f"Average transaction latency: {avg_latency:.2f} ms\n")
+            f.write(f"Median transaction latency: {median_latency:.2f} ms\n")
+            f.write(f"95th percentile transaction latency: {perc_95_latency:.2f} ms\n")
+            f.write(f"99th percentile transaction latency: {perc_99_latency:.2f} ms\n")
 
-    with open("stderr", "w") as f:
-        f.write(f"Total number of transactions processed: {total_transactions}\n")
-        f.write(f"Total elapsed time for processing the transactions: {elapsed_time:.2f} seconds\n")
-        f.write(f"Transaction throughput: {throughput:.2f} transactions/second\n")
-        f.write(f"Average transaction latency: {avg_latency:.2f} ms\n")
-        f.write(f"Median transaction latency: {median_latency:.2f} ms\n")
-        f.write(f"95th percentile transaction latency: {perc_95_latency:.2f} ms\n")
-        f.write(f"99th percentile transaction latency: {perc_99_latency:.2f} ms\n")
+    except Exception as e:
+        print(f"An unexpected error occurred: {type(e).__name__}")
+        print(str(e))
+
