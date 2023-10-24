@@ -227,7 +227,7 @@ def process_d(db, values, output_file):
             
 
 # Finds related customers
-def process_ r(db, values, output_file):
+def process_r(db, values, output_file):
     executed = False
     w_id = int(values[1])
     d_id = int(values[2])
@@ -245,19 +245,19 @@ def process_ r(db, values, output_file):
     items_df = items_df.rename(columns={'i_id': 'i1_id'})
 
     # join 2 items table to get a table with 2 items per row given an order
-    2_items_df = items_df.merge(temp_items_df, on=['w_id', 'd_id', 'c_id', 'o_id', 'ol_id'], how='inner')
+    two_items_df = items_df.merge(temp_items_df, on=['w_id', 'd_id', 'c_id', 'o_id', 'ol_id'], how='inner')
 
     # filter rows with 2 of the same items
-    2_items_df = 2_items_df[2_items_df['i1_id'] != 2_items_df['i2_id']]
+    two_items_df = two_items_df[two_items_df['i1_id'] != two_items_df['i2_id']]
 
     # join 2 items table to get a table with 2 different customers with the same items in their order`
-    temp_2_items_df = 2_items_df.rename(columns={'w_id': 'w2_id', 'd_id': 'd2_id',
+    temp_2_items_df = two_items_df.rename(columns={'w_id': 'w2_id', 'd_id': 'd2_id',
         'c_id': 'c2_id', 'o_id': 'o2_id', 'ol_number': 'ol_number2'})
 
-    2_items_df = 2_items_df.rename(columns={'w_id': 'w1_id', 'd_id': 'd1_id',
+    two_items_df = two_items_df.rename(columns={'w_id': 'w1_id', 'd_id': 'd1_id',
         'c_id': 'c1_id', 'o_id': 'o1_id', 'ol_number': 'ol_number1'})
     
-    r_c_i = 2_items_df.merge(temp_2_items_df, on=['i1_id', 'i2_id'], how='inner')
+    r_c_i = two_items_df.merge(temp_2_items_df, on=['i1_id', 'i2_id'], how='inner')
     
     # filter rows where customers are the same
     related_customers = r_c_i[r_c_i['w1_id'] != r_c_i['w2_id']]
@@ -273,7 +273,7 @@ def process_ r(db, values, output_file):
 
 if __name__ == '__main__':
     print(sys.argv)
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 5:
         print("You must provide exactly 5 arguments!")
         sys.exit(1)
 
@@ -311,11 +311,11 @@ if __name__ == '__main__':
                             is_successfully_executed = process_o(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 'd':
                             is_successfully_executed = process_d(session, txn_keys, output_file)
-                            if (!is_successfully_executed):
+                            if (not is_successfully_executed):
                                 print("failed txn d")
                         if txn_keys[0].lower() == 'r':
                             is_successfully_executed = process_r(session, txn_keys, output_file)
-                            if (!is_successfully_executed):
+                            if (not is_successfully_executed):
                                 print("failed txn r")
                         if is_successfully_executed:
                             txn_end_time = time.time()
