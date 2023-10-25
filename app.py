@@ -47,7 +47,8 @@ def process_o(db, values, output_file):
     order_items_res = db.execute(last_order_items_statement, (c_w_id, c_d_id, last_order_id))
     if not order_items_res:
         return executed
-    formatted_res = format_res({"o_id": last_order_id, "o_entry_d": res[0].o_entry_d, "o_carrier_id": res[0].o_carrier_id}, order_items_res)
+    formatted_res = format_res(
+        {"o_id": last_order_id, "o_entry_d": res[0].o_entry_d, "o_carrier_id": res[0].o_carrier_id}, order_items_res)
     # print(formatted_res)
     output_file.write(formatted_res)
 
@@ -88,7 +89,8 @@ def process_p(db, values, output_file):
     try:
         update_customer_statement = db.prepare(
             "UPDATE customers SET c_balance = ?, c_ytd_payment = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
-        bound_statement = update_customer_statement.bind((new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_d_id, c_id))
+        bound_statement = update_customer_statement.bind(
+            (new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_d_id, c_id))
         db.execute(bound_statement)
 
         batch = BatchStatement()
@@ -98,13 +100,14 @@ def process_p(db, values, output_file):
         insert_query = db.prepare(
             "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, dummy_partition_key, c_name, w_name, d_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
         batch.add(insert_query, (
-        new_balance, c_w_id, c_id, c_d_id, 'global', user_res[0].c_name, warehouses_res[0].w_name,
-        districts_res[0].d_name))
+            new_balance, c_w_id, c_id, c_d_id, 'global', user_res[0].c_name, warehouses_res[0].w_name,
+            districts_res[0].d_name))
         db.execute(batch)
     except:
         return executed
 
-    latest_customer = SimpleStatement(f"""SELECT * FROM customers WHERE c_w_id={c_w_id} AND c_d_id={c_d_id} AND c_id={c_id}""")
+    latest_customer = SimpleStatement(
+        f"""SELECT * FROM customers WHERE c_w_id={c_w_id} AND c_d_id={c_d_id} AND c_id={c_id}""")
     latest_customer_res = db.execute(latest_customer)
 
     formatted_res = format_res(latest_customer_res, warehouses_res, districts_res, {'payment': payment})
@@ -143,16 +146,17 @@ def process_s(db, values, output_file):
     items_lookup_statement = db.prepare(
         'select s_quantity, i_id from stock_level_transaction where w_id = ? and d_id = ? and ol_o_id >= ?')
     items_res = db.execute(items_lookup_statement, (w_id, d_id, last_order_num - L))
-    
+
     low_quantity_item_set = set()
     for row in items_res:
         if (row.s_quantity < T):
             low_quantity_item_set.add(row.i_id)
 
     print(len(low_quantity_item_set))
-    output_file.write(len(low_quantity_item_set))
+    output_file.write(str(len(low_quantity_item_set)))
     executed = True
     return executed
+
 
 def process_i(db, values, output_file):
     executed = False
@@ -163,29 +167,29 @@ def process_i(db, values, output_file):
     w_id = int(values[1])
     d_id = int(values[2])
     L = int(values[3])
-    
+
     last_order_num_lookup_statement = db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
     N_res = db.execute(last_order_num_lookup_statement, (w_id, d_id))
     N = N_res[0].d_next_o_id
 
-    last_L_order_lookup_statement = db.prepare('select o_id, o_entry_d, c_name, i_id, i_name, ol_quantity from popular_item_transaction where w_id=? and d_id=? and o_id >= ?;')
-    S_res = db.execute(last_L_order_lookup_statement, (w_id, d_id, N-L))
+    last_L_order_lookup_statement = db.prepare(
+        'select o_id, o_entry_d, c_name, i_id, i_name, ol_quantity from popular_item_transaction where w_id=? and d_id=? and o_id >= ?;')
+    S_res = db.execute(last_L_order_lookup_statement, (w_id, d_id, N - L))
     S_df = pd.DataFrame(list(S_res))
 
     s_without_id_df = S_df.drop(['i_id'], axis=1)
 
-    p_df = S_df[['i_id','i_name']]
-    p_df = p_df.value_counts().reset_index().rename(columns={"count":"percentage"})
-    p_df['percentage'] = (p_df['percentage']*100/L).round(2)
+    p_df = S_df[['i_id', 'i_name']]
+    p_df = p_df.value_counts().reset_index().rename(columns={"count": "percentage"})
+    p_df['percentage'] = (p_df['percentage'] * 100 / L).round(2)
     p_df = p_df.drop(['i_id'], axis=1)
 
     formatted_res = format_res({"W_ID": w_id, "D_ID": d_id, "L": L},
-                                s_without_id_df,
-                                p_df)
+                               s_without_id_df,
+                               p_df)
     output_file.write(formatted_res)
     executed = True
     return executed
-
 
 
 if __name__ == '__main__':
@@ -212,7 +216,7 @@ if __name__ == '__main__':
     try:
         count = 0
         while count < len(filenames):
-            with open('stdout', 'w') as output_file:
+            with open(f"{directory}stdout", 'w') as output_file:
                 dir_filename = os.path.join(directory, filenames[count])
                 with open(dir_filename, 'r') as file:
                     for line in file:
@@ -222,16 +226,16 @@ if __name__ == '__main__':
                         txn_keys = line.strip().split(',')
                         is_successfully_executed = False
                         # if txn_keys[0].lower() == 'N':
-                            # handle m more lines 
-                            # is_successfully_executed = process_n(session, txn_keys, output_file) 
+                        # handle m more lines
+                        # is_successfully_executed = process_n(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 'p':
                             is_successfully_executed = process_p(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 't':
                             is_successfully_executed = process_t(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 's':
                             is_successfully_executed = process_s(session, txn_keys, output_file)
-                        if txn_keys[0].lower() == 'i':
-                            is_successfully_executed = process_i(session, txn_keys, output_file)
+                        # if txn_keys[0].lower() == 'i':
+                            # is_successfully_executed = process_i(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 'o':
                             is_successfully_executed = process_o(session, txn_keys, output_file)
                         if is_successfully_executed:
@@ -249,7 +253,7 @@ if __name__ == '__main__':
         perc_95_latency = statistics.quantiles(latencies, n=100)[94]  # 95th percentile
         perc_99_latency = statistics.quantiles(latencies, n=100)[98]  # 99th percentile
 
-        with open("stderr", "w") as f:
+        with open(f"{directory}stderr", "w") as f:
             f.write(f"Total number of transactions processed: {total_transactions}\n")
             f.write(f"Total elapsed time for processing the transactions: {elapsed_time:.2f} seconds\n")
             f.write(f"Transaction throughput: {throughput:.2f} transactions/second\n")
@@ -261,4 +265,3 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"An unexpected error occurred: {type(e).__name__}")
         print(str(e))
-
