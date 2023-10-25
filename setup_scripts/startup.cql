@@ -6,14 +6,15 @@ DROP TABLE IF EXISTS supplier.orders;
 DROP TABLE IF EXISTS supplier.items;
 DROP TABLE IF EXISTS supplier.order_lines;
 DROP TABLE IF EXISTS supplier.stocks;
-DROP TYPE IF EXISTS supplier.address;
-DROP TYPE IF EXISTS supplier.name;
 
 -- Tables for denormalisation
 DROP TABLE IF EXISTS supplier.top_balances;
 DROP TABLE IF EXISTS supplier.orders_by_customer;
 DROP TABLE IF EXISTS supplier.undelivered_orders_by_warehouses_district;
 DROP TABLE IF EXISTS supplier.orders_by_warehouse_district_customer;
+
+DROP TYPE IF EXISTS supplier.address;
+DROP TYPE IF EXISTS supplier.name;
 
 CREATE TYPE supplier.name
     (

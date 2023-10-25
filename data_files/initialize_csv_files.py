@@ -155,7 +155,6 @@ def process_storage_under_threshold():
     df.to_csv('storage_under_treshold.csv', index=False)
     
 if __name__ == '__main__':
-    '''
     #check_rows()   
     process_warehouse()
     process_district()
@@ -167,8 +166,7 @@ if __name__ == '__main__':
     process_orders_by_customer()
     process_top_balances()
     process_undelivered_orders_by_warehouse_district()
-    process_related_customers_txns()
-    '''    
+    process_related_customers_txns()   
     process_storage_under_threshold()
     
 
