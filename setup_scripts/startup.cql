@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS supplier.customers
     C_PAYMENT_CNT  INT,
     C_DELIVERY_CNT INT,
     C_DATA         VARCHAR,
-    PRIMARY KEY ((C_W_ID), C_D_ID, C_ID)
+    PRIMARY KEY ((C_W_ID, C_D_ID), C_ID)
 );
 
 -- For transaction 7
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS supplier.orders
     O_OL_CNT     DECIMAL,
     O_ALL_LOCAL  DECIMAL,
     O_ENTRY_D    TIMESTAMP,
-    PRIMARY KEY ((O_W_ID), O_ID)
+    PRIMARY KEY ((O_W_ID, O_D_ID), O_ID)
 );
 
 CREATE TABLE IF NOT EXISTS supplier.items
@@ -195,3 +195,16 @@ CREATE TABLE IF NOT EXISTS supplier.stock_level_transaction
     S_QUANTITY   DECIMAL,
     PRIMARY KEY ((W_ID,D_ID),OL_O_ID,OL_Number)
 ) WITH CLUSTERING ORDER BY (OL_O_ID DESC);
+
+CREATE TABLE IF NOT EXISTS supplier.popular_item_transaction (
+W_ID         INT,
+D_ID         INT,
+O_ID         INT,
+O_ENTRY_D    TIMESTAMP,
+C_NAME       Name,
+OL_NUMBER    INT,
+I_ID         INT,
+OL_QUANTITY  DECIMAL,
+I_NAME       VARCHAR,
+PRIMARY KEY ((W_ID,D_ID), O_ID, OL_NUMBER)
+) WITH CLUSTERING ORDER BY (O_ID DESC);
