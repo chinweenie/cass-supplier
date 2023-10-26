@@ -12,6 +12,8 @@ DROP TABLE IF EXISTS supplier.top_balances;
 DROP TABLE IF EXISTS supplier.orders_by_customer;
 DROP TABLE IF EXISTS supplier.undelivered_orders_by_warehouses_district;
 DROP TABLE IF EXISTS supplier.orders_by_warehouse_district_customer;
+DROP TABLE IF EXISTS supplier.supplier.stock_level_transaction;
+DROP TABLE IF EXISTS supplier.popular_item_transaction;
 
 DROP TYPE IF EXISTS supplier.address;
 DROP TYPE IF EXISTS supplier.name;
