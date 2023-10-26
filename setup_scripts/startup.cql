@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS supplier.items
     I_PRICE DECIMAL,
     I_IM_ID INT,
     I_DATA  VARCHAR,
-    PRIMARY KEY (I_ID),
+    PRIMARY KEY (I_ID)
 );
 
 -- For Transaction 4

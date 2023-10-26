@@ -227,7 +227,13 @@ def process_d(db, values, output_file):
     # update all order lines for the order to current date and time
     # update customer balance by total price of the orders
     # update customer delivery count by 1
-    for order in oldest_undelivered_orders:
+    for d_id in range(1,11):
+        order = oldest_undelivered_orders[d_id - 1]
+
+        if (order == None):
+            print(f"warehouse: {w_id} district: {d_id} has no undelivered orders!")
+            continue
+
         o_w_id = int(order.o_w_id)
         o_d_id = int(order.o_d_id)
         o_id = int(order.o_id)
@@ -266,8 +272,11 @@ def process_d(db, values, output_file):
 
     delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
         WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
+
     # delete delivered orders from undelivered orders table
     for order in oldest_undelivered_orders:
+        if (order == None):
+            continue
         db.execute(delete_order_stmt, [order.o_w_id, order.o_d_id, order.o_id])
 
     executed = True
@@ -353,7 +362,7 @@ if __name__ == '__main__':
                             # handle m more lines 
                             # is_successfully_executed = process_n(session, txn_keys, output_file) 
                         # if txn_keys[0].lower() == 'p':
-                        #    is_successfully_executed = process_p(session, txn_keys, output_file)
+                            # is_successfully_executed = process_p(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 't':
                             is_successfully_executed = process_t(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 's':
