@@ -152,7 +152,7 @@ def process_s(db, values, output_file):
             low_quantity_item_set.add(row.i_id)
 
     print(len(low_quantity_item_set))
-    output_file.write(len(low_quantity_item_set))
+    output_file.write(str(len(low_quantity_item_set)))
     executed = True
     return executed
 
@@ -207,7 +207,8 @@ def process_d(db, values, output_file):
     oldest_undelivered_orders = []
     # d_id has values from 1-10 for each warehouse
     for d_id in range(1, 11):
-        oldest_undelivered_order = db.execute(oldest_undel_order_per_wid_did, [w_id, d_id])
+        # oldest undelivered order is the first result of the select as o_id is ordered in ascending
+        oldest_undelivered_order = db.execute(oldest_undel_order_per_wid_did, [w_id, d_id]).one()
         oldest_undelivered_orders.append(oldest_undelivered_order)
 
     if (len(oldest_undelivered_orders) < 10):
@@ -218,8 +219,8 @@ def process_d(db, values, output_file):
     get_order_lines_stmt = db.prepare("SELECT * FROM order_lines WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ?")
     update_order_lines_stmt = db.prepare("""UPDATE order_lines SET ol_delivery_d = ? WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? 
         AND ol_number = ?""")
-    update_customer_stmt = db.prepare("""UPDATE customers SET c_balance = c_balance + ?, c_delivery_cnt = c_delivery_cnt + 1
-        WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?""")
+    get_customer_row_values = db.prepare("SELECT c_balance, c_delivery_cnt FROM customers WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
+    update_customer_stmt = db.prepare("UPDATE customers SET c_balance = ?, c_delivery_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
 
 
     # update carrier_id in orders for each delivered order
@@ -227,10 +228,10 @@ def process_d(db, values, output_file):
     # update customer balance by total price of the orders
     # update customer delivery count by 1
     for order in oldest_undelivered_orders:
-        o_w_id = order.o_w_id
-        o_d_id = order.o_d_id
-        o_id = order.o_id
-        o_c_id = order.o_c_id
+        o_w_id = int(order.o_w_id)
+        o_d_id = int(order.o_d_id)
+        o_id = int(order.o_id)
+        o_c_id = int(order.o_c_id)
         
         # update carrier_id in orders table
         db.execute(update_carrier_stmt, [carrier_id, o_w_id, o_d_id,o_id])
@@ -238,9 +239,18 @@ def process_d(db, values, output_file):
         # get order_lines corresponding to the order
         order_lines = db.execute(get_order_lines_stmt, [o_w_id, o_d_id, o_id])
 
+        # print("w_id: " + str(o_w_id) + " d_id: " + str(o_d_id) + " c_id: " + str(o_c_id))
+        # get customer balance and delivery count values from table. searched by unique key so only 1 result
+        customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one()
+
+        # customer not found
+        if (customer_values == None):
+            return executed
+
         # update all order_lines to current date and time
         curr_timestamp = datetime.now()
-        total_order_amount = 0
+        total_order_amount = float(customer_values.c_balance)
+        new_delivery_count = int(customer_values.c_delivery_cnt) + 1
 
         for ol in order_lines:
             ol_number = ol.ol_number
@@ -251,9 +261,8 @@ def process_d(db, values, output_file):
             # calculate total sum of order
             total_order_amount = total_order_amount + float(ol.ol_amount)
 
-            # update customer tables with total amounts and delivery count
-            db.execute(update_customer_stmt, [total_order_amount, o_w_id, o_d_id, o_c_id])
-
+        # update customer tables with total amounts and delivery count
+        db.execute(update_customer_stmt, [total_order_amount, new_delivery_count, o_w_id, o_d_id, o_c_id])
 
     delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
         WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
@@ -284,7 +293,7 @@ def process_r(db, values, output_file):
     items_df = items_df.rename(columns={'i_id': 'i1_id'})
 
     # join 2 items table to get a table with 2 items per row given an order
-    two_items_df = items_df.merge(temp_items_df, on=['w_id', 'd_id', 'c_id', 'o_id', 'ol_id'], how='inner')
+    two_items_df = items_df.merge(temp_items_df, on=['w_id', 'd_id', 'c_id', 'o_id', 'ol_number'], how='inner')
 
     # filter rows with 2 of the same items
     two_items_df = two_items_df[two_items_df['i1_id'] != two_items_df['i2_id']]
@@ -305,7 +314,7 @@ def process_r(db, values, output_file):
     output_file.write(f"C_W_ID: {w_id} C_D_ID: {d_id} C_ID: {c_id}")
 
     formatted_res = format_res(related_customers)
-    output_file.write(formattted_res)
+    output_file.write(formatted_res)
 
     return executed
 
@@ -343,14 +352,14 @@ if __name__ == '__main__':
                         # if txn_keys[0].lower() == 'N':
                             # handle m more lines 
                             # is_successfully_executed = process_n(session, txn_keys, output_file) 
-                        if txn_keys[0].lower() == 'p':
-                            is_successfully_executed = process_p(session, txn_keys, output_file)
+                        # if txn_keys[0].lower() == 'p':
+                        #    is_successfully_executed = process_p(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 't':
                             is_successfully_executed = process_t(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 's':
                             is_successfully_executed = process_s(session, txn_keys, output_file)
-                        if txn_keys[0].lower() == 'i':
-                            is_successfully_executed = process_i(session, txn_keys, output_file)
+                        # if txn_keys[0].lower() == 'i':
+                        #    is_successfully_executed = process_i(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 'o':
                             is_successfully_executed = process_o(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 'd':

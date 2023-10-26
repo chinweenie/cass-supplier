@@ -182,8 +182,8 @@ CREATE TABLE IF NOT EXISTS supplier.orders_by_warehouse_district_customer
     O_ID        INT,
     OL_NUMBER   INT,
     I_ID        INT,
-    PRIMARY KEY ((W_ID, D_ID, O_ID, OL_NUMBER), C_ID)
-) WITH CLUSTERING ORDER BY (C_ID ASC);
+    PRIMARY KEY ((W_ID, D_ID, C_ID), O_ID, OL_NUMBER)
+);
 
 CREATE TABLE IF NOT EXISTS supplier.stock_level_transaction
 (
