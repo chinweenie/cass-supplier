@@ -141,35 +141,6 @@ def process_related_customers_txns():
     print('orders_by_warehouse_district_customer_df size: ' + str(orders_by_warehouse_district_customer_df.shape))
     orders_by_warehouse_district_customer_df.to_csv('orders_by_warehouse_district_customer_df.csv', index=False)
 
-    '''
-    two_item_column_names = ['w_id', 'd_id', 'o_id', 'c_id', 'ol_number', 'i1_id', 'i2_id']
-    two_item_df = pandas.DataFrame(columns=two_item_column_names)
-    grouped = order_join_orderline_df.groupby(['w_id', 'd_id', 'o_id', 'o_c_id'])
-
-    group_count_tracker = 0
-
-    for name, group in grouped:
-        group_copy = group.copy()
-        group_copy.rename(columns={'w_id': 'w_id1', 'd_id': 'd_id1', 'o_id': 'o_id1','o_c_id': 'o_c_id1', 'ol_number': 'ol_number1', 'ol_i_id': 'ol_i_id1'}, inplace=True)
-        cross_df = pandas.merge(group, group_copy, how='cross')
-
-        item_filter = (cross_df['ol_i_id'] != cross_df['ol_i_id1'])
-        cross_df = cross_df[item_filter]
-
-    # print(row_counts)
-    customer_df.to_csv('customer_df.csv',index=False)
-
-        cross_df = cross_df.reset_index(drop=True)
-        two_item_df = two_item_df.reset_index(drop=True)
-        two_item_df = pandas.concat([two_item_df, cross_df], axis=0, ignore_index=True)
-        
-        group_count_tracker += 1
-        print("% processed: " + str(group_count_tracker / grouped.ngroups))
-    
-    print('two_item_df.shape: ' + str(two_item_df.shape))
-    two_item_df.to_csv('two_item_df.csv', index=False)
-    '''
-
 # for txn 2.5
 def process_storage_under_threshold():
     order_line_df = pandas.read_csv("order_line_df.csv")
@@ -229,7 +200,8 @@ if __name__ == '__main__':
     process_orders_by_customer()
     process_top_balances()
     process_undelivered_orders_by_warehouse_district()
-    process_related_customers_txns()
+    process_related_customers_txns()   
     process_storage_under_threshold()
     
 
+    print('csv initialization done')

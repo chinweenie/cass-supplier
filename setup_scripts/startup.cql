@@ -6,14 +6,17 @@ DROP TABLE IF EXISTS supplier.orders;
 DROP TABLE IF EXISTS supplier.items;
 DROP TABLE IF EXISTS supplier.order_lines;
 DROP TABLE IF EXISTS supplier.stocks;
-DROP TYPE IF EXISTS supplier.address;
-DROP TYPE IF EXISTS supplier.name;
 
 -- Tables for denormalisation
 DROP TABLE IF EXISTS supplier.top_balances;
 DROP TABLE IF EXISTS supplier.orders_by_customer;
 DROP TABLE IF EXISTS supplier.undelivered_orders_by_warehouses_district;
 DROP TABLE IF EXISTS supplier.orders_by_warehouse_district_customer;
+DROP TABLE IF EXISTS supplier.stock_level_transaction;
+DROP TABLE IF EXISTS supplier.popular_item_transaction;
+
+DROP TYPE IF EXISTS supplier.address;
+DROP TYPE IF EXISTS supplier.name;
 
 CREATE TYPE supplier.name
     (
@@ -111,7 +114,7 @@ CREATE TABLE IF NOT EXISTS supplier.items
     I_PRICE DECIMAL,
     I_IM_ID INT,
     I_DATA  VARCHAR,
-    PRIMARY KEY (I_ID),
+    PRIMARY KEY (I_ID)
 );
 
 -- For Transaction 4
@@ -181,8 +184,8 @@ CREATE TABLE IF NOT EXISTS supplier.orders_by_warehouse_district_customer
     O_ID        INT,
     OL_NUMBER   INT,
     I_ID        INT,
-    PRIMARY KEY ((W_ID, D_ID, O_ID, OL_NUMBER), C_ID)
-) WITH CLUSTERING ORDER BY (C_ID ASC);
+    PRIMARY KEY ((W_ID, D_ID, C_ID), O_ID, OL_NUMBER)
+);
 
 CREATE TABLE IF NOT EXISTS supplier.stock_level_transaction
 (
