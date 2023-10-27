@@ -114,7 +114,6 @@ def process_p(db, values, output_file):
     latest_customer_res = db.execute(latest_customer)
 
     formatted_res = format_res(latest_customer_res, warehouses_res, districts_res, {'payment': payment})
-    # print(formatted_res)
     output_file.write(formatted_res)
 
     executed = True
@@ -350,6 +349,7 @@ if __name__ == '__main__':
     cluster = Cluster([ip_address])
     session = cluster.connect()
     session.set_keyspace('supplier')
+    session.default_timeout = 120
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
 
     total_transactions = 0
@@ -372,22 +372,22 @@ if __name__ == '__main__':
                         # is_successfully_executed = process_n(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 'p':
                             is_successfully_executed = process_p(session, txn_keys, output_file)
-                        if txn_keys[0].lower() == 't':
-                            is_successfully_executed = process_t(session, txn_keys, output_file)
-                        if txn_keys[0].lower() == 's':
-                            is_successfully_executed = process_s(session, txn_keys, output_file)
+                        # if txn_keys[0].lower() == 't':
+                        #     is_successfully_executed = process_t(session, txn_keys, output_file)
+                        # if txn_keys[0].lower() == 's':
+                        #     is_successfully_executed = process_s(session, txn_keys, output_file)
                         # if txn_keys[0].lower() == 'i':
                             # is_successfully_executed = process_i(session, txn_keys, output_file)
-                        if txn_keys[0].lower() == 'o':
-                            is_successfully_executed = process_o(session, txn_keys, output_file)
-                        if txn_keys[0].lower() == 'd':
-                            is_successfully_executed = process_d(session, txn_keys, output_file)
-                            if (not is_successfully_executed):
-                                print("failed txn d")
-                        if txn_keys[0].lower() == 'r':
-                            is_successfully_executed = process_r(session, txn_keys, output_file)
-                            if (not is_successfully_executed):
-                                print("failed txn r")
+                        # if txn_keys[0].lower() == 'o':
+                        #     is_successfully_executed = process_o(session, txn_keys, output_file)
+                        # if txn_keys[0].lower() == 'd':
+                        #     is_successfully_executed = process_d(session, txn_keys, output_file)
+                        #     if (not is_successfully_executed):
+                        #         print("failed txn d")
+                        # if txn_keys[0].lower() == 'r':
+                        #     is_successfully_executed = process_r(session, txn_keys, output_file)
+                        #     if (not is_successfully_executed):
+                        #         print("failed txn r")
                         if is_successfully_executed:
                             txn_end_time = time.time()
                             latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms

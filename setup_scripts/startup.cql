@@ -1,3 +1,4 @@
+DROP KEYSPACE IF EXISTS supplier;
 CREATE KEYSPACE IF NOT EXISTS supplier WITH REPLICATION = {'class':'SimpleStrategy', 'replication_factor' : 3};
 DROP TABLE IF EXISTS supplier.warehouses;
 DROP TABLE IF EXISTS supplier.districts;

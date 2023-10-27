@@ -14,20 +14,24 @@ logtime() {
 
 source ${HOME}/.bashrc
 echo "Starting Cassandra on every node"
-srun --nodes=5 --ntasks=5 --cpus-per-task=16 --nodelist=xcnd30,xcnd31,xcnd32,xcnd33,xcnd34 ${HOME}/start_cass.sh &
-sleep 300
+srun --nodes=3 --ntasks=3 --cpus-per-task=16 --nodelist=xcnd30,xcnd31,xcnd32 ${HOME}/start_cass.sh &
+sleep 60
+srun --nodes=2 --ntasks=2 --cpus-per-task=16 --nodelist=xcnd33,xcnd34 ${HOME}/start_cass.sh &
+sleep 60
 
-echo "Compiling csv files in xcnd30"
-srun --nodes=1 --ntasks=1 --cpus-per-task=4 --nodelist=xcnd30 bash -c "python /temp/teamd-cass/data_files/initialize_csv_files.py" &
-sleep 120
+#echo "Compiling csv files in xcnd30"
+#srun --nodes=1 --ntasks=1 --cpus-per-task=4 --nodelist=xcnd30 bash -c "python $CASS_DIR/data_files/initialize_csv_files.py" > ${HOME}/compile-csv.log 2>&1 &
+#sleep 120
 
-echo "Creating tables and keyspace in xcnd30"
-srun --nodes=1 --ntasks=1 --cpus-per-task=16 -nodelist=xcnd30 bash -c "python $CASS_DIR/cqlsh.py 192.168.48.249 < /temp/teamd-cass/data_files/startup.cql" &
-sleep 300
+#echo "Creating tables and keyspace in xcnd30"
+#srun --nodes=1 --ntasks=1 --cpus-per-task=4 --nodelist=xcnd30 bash -c "python $CASS_DIR/cqlsh.py 192.168.48.249 < $CASS_DIR/data_files/startup.cql" > ${HOME}/create-schema.log 2>&1 &
+#echo "Completed create tables and keyspace"
+#sleep 180
 
 echo "Loading data in xcnd30"
-srun --nodes=1 --ntasks=1 --cpus-per-task=16 -nodelist=xcnd30 bash -c "python $CASS_DIR/cqlsh.py 192.168.48.249 < /temp/teamd-cass/data_files/load_data.cql" &
+srun --nodes=1 --ntasks=1 --cpus-per-task=4 --nodelist=xcnd30 bash -c "python $CASS_DIR/cqlsh.py 192.168.48.249 < $CASS_DIR/data_files/load_data.cql" & > ${HOME}/load-data.log 2>&1 &
 sleep 300
+
 #nodes_up=0
 #while [ "$nodes_up" -ne "5" ]; do
 #    nodes_up=$($nodetool status | grep "^UN" | wc -l)
