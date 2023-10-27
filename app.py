@@ -227,7 +227,6 @@ def process_d(db, values, output_file):
     get_customer_row_values = db.prepare("SELECT c_balance, c_delivery_cnt FROM customers WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
     update_customer_stmt = db.prepare("UPDATE customers SET c_balance = ?, c_delivery_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
 
-
     # update carrier_id in orders for each delivered order
     # update all order lines for the order to current date and time
     # update customer balance by total price of the orders
@@ -262,6 +261,7 @@ def process_d(db, values, output_file):
         curr_timestamp = datetime.now()
         total_order_amount = float(customer_values.c_balance)
         new_delivery_count = int(customer_values.c_delivery_cnt) + 1
+        customer_old_balance = customer_values.c_balance
 
         for ol in order_lines:
             ol_number = ol.ol_number
@@ -277,6 +277,27 @@ def process_d(db, values, output_file):
 
     delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
         WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
+
+    batch = BatchStatement()
+    warehouses = SimpleStatement(f"""SELECT * FROM warehouses WHERE w_id={customer_values.c_w_id}""")
+    warehouses_res = db.execute(warehouses)
+    if not warehouses_res:
+        return executed
+
+    districts = SimpleStatement(f"""SELECT * FROM districts WHERE d_w_id={customer_values.c_w_id} AND d_id={customer_values.c_d_id}""")
+    districts_res = db.execute(districts)
+    if not districts_res:
+        return executed
+
+    delete_query = db.prepare(
+        "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ? AND dummy_partition_key = 'global'")
+    batch.add(delete_query, (customer_values.c_w_id, customer_old_balance, customer_values.c_d_id, customer_values.c_id))
+    insert_query = db.prepare(
+        "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, dummy_partition_key, c_name, w_name, d_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    batch.add(insert_query, (
+        total_order_amount, customer_values.c_w_id, customer_values.c_id, customer_values.c_d_id, 'global', customer_values.c_name, warehouses_res[0].w_name,
+        districts_res[0].d_name))
+    db.execute(batch)
 
     # delete delivered orders from undelivered orders table
     for order in oldest_undelivered_orders:

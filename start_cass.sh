@@ -10,6 +10,6 @@ NODE=$(hostname)
 echo $(logtime) "$(java -version)"
 echo $(logtime) "$NODE: $JAVA_HOME"
 echo $(logtime) "$NODE: $CASSANDRA_HOME"
-$cassandra -f > ${HOME}/cass-startup-${NODE}.log 2>&1 &
+$cassandra -f > ${HOME}/batch_log/cass-startup-${NODE}.log 2>&1 &
 sleep 3600
 
