@@ -1,8 +1,10 @@
 import psycopg2
 from psycopg2 import sql
+import time
 
 def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
     conn = None
+    start_time = time.time()
     try:
         # Establish connection to the database
         conn = psycopg2.connect(host=host, database=database, user=user, password=password)
@@ -89,6 +91,10 @@ def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
 
         if cur: 
             cur.close()
+
+        end_time = time.time()
+        latency = (end_time - start_time) * 1000
+        return latency
 
 # Example usage
 order_status(host="localhost", database="project", user="cs4224d", password="1234", c_w_id=1, c_d_id=1, c_id=1)

@@ -1,13 +1,16 @@
 import os
+import pandas as pd
 import time
 import statistics
+import sys
+
 
 from cassandra.cluster import Cluster
-import sys
 from decimal import Decimal
 from cassandra.query import BatchStatement, SimpleStatement
 import pandas as pd
 
+from datetime import datetime
 
 def format_res(*results_sets):
     output = []
@@ -192,9 +195,148 @@ def process_i(db, values, output_file):
     return executed
 
 
+# Processes the oldest undelivered order for all 10 districts of each warehouse
+# The oldest undelivered order is determined by the smallest O_ID
+def process_d(db, values, output_file):
+    executed = False
+    if len(values) < 3:
+        print("Not enough arguments for txd D!")
+        return executed
+
+    w_id = int(values[1])
+    carrier_id = int(values[2])
+
+    # prepared statement
+    oldest_undel_order_per_wid_did = db.prepare("""SELECT * FROM undelivered_orders_by_warehouse_district WHERE 
+        o_w_id = ? AND o_d_id = ? LIMIT 1""")
+
+    oldest_undelivered_orders = []
+    # d_id has values from 1-10 for each warehouse
+    for d_id in range(1, 11):
+        # oldest undelivered order is the first result of the select as o_id is ordered in ascending
+        oldest_undelivered_order = db.execute(oldest_undel_order_per_wid_did, [w_id, d_id]).one()
+        oldest_undelivered_orders.append(oldest_undelivered_order)
+
+    if (len(oldest_undelivered_orders) < 10):
+        return executed
+
+
+    update_carrier_stmt = db.prepare("UPDATE orders SET o_carrier_id = ? WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?")
+    get_order_lines_stmt = db.prepare("SELECT * FROM order_lines WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ?")
+    update_order_lines_stmt = db.prepare("""UPDATE order_lines SET ol_delivery_d = ? WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? 
+        AND ol_number = ?""")
+    get_customer_row_values = db.prepare("SELECT c_balance, c_delivery_cnt FROM customers WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
+    update_customer_stmt = db.prepare("UPDATE customers SET c_balance = ?, c_delivery_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
+
+
+    # update carrier_id in orders for each delivered order
+    # update all order lines for the order to current date and time
+    # update customer balance by total price of the orders
+    # update customer delivery count by 1
+    for d_id in range(1,11):
+        order = oldest_undelivered_orders[d_id - 1]
+
+        if (order == None):
+            print(f"warehouse: {w_id} district: {d_id} has no undelivered orders!")
+            continue
+
+        o_w_id = int(order.o_w_id)
+        o_d_id = int(order.o_d_id)
+        o_id = int(order.o_id)
+        o_c_id = int(order.o_c_id)
+        
+        # update carrier_id in orders table
+        db.execute(update_carrier_stmt, [carrier_id, o_w_id, o_d_id,o_id])
+
+        # get order_lines corresponding to the order
+        order_lines = db.execute(get_order_lines_stmt, [o_w_id, o_d_id, o_id])
+
+        # print("w_id: " + str(o_w_id) + " d_id: " + str(o_d_id) + " c_id: " + str(o_c_id))
+        # get customer balance and delivery count values from table. searched by unique key so only 1 result
+        customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one()
+
+        # customer not found
+        if (customer_values == None):
+            return executed
+
+        # update all order_lines to current date and time
+        curr_timestamp = datetime.now()
+        total_order_amount = float(customer_values.c_balance)
+        new_delivery_count = int(customer_values.c_delivery_cnt) + 1
+
+        for ol in order_lines:
+            ol_number = ol.ol_number
+
+            # update order delivery date time
+            db.execute(update_order_lines_stmt, [curr_timestamp, o_w_id, o_d_id, o_id, ol_number])
+
+            # calculate total sum of order
+            total_order_amount = total_order_amount + float(ol.ol_amount)
+
+        # update customer tables with total amounts and delivery count
+        db.execute(update_customer_stmt, [total_order_amount, new_delivery_count, o_w_id, o_d_id, o_c_id])
+
+    delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
+        WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
+
+    # delete delivered orders from undelivered orders table
+    for order in oldest_undelivered_orders:
+        if (order == None):
+            continue
+        db.execute(delete_order_stmt, [order.o_w_id, order.o_d_id, order.o_id])
+
+    executed = True
+    return executed
+            
+
+# Finds related customers
+def process_r(db, values, output_file):
+    executed = False
+    w_id = int(values[1])
+    d_id = int(values[2])
+    c_id = int(values[3])
+
+    get_items_stmt = db.prepare("SELECT * FROM orders_by_warehouse_district_customer WHERE w_id = ? AND d_id = ? AND c_id = ?")
+    items_table = db.execute(get_items_stmt, [w_id, d_id, c_id])
+
+    executed = True
+    
+    # work with df from now, since we'll be joining
+    items_df = pd.DataFrame(items_table)
+    temp_items_df = items_df.rename(columns={'i_id': 'i2_id'})
+
+    items_df = items_df.rename(columns={'i_id': 'i1_id'})
+
+    # join 2 items table to get a table with 2 items per row given an order
+    two_items_df = items_df.merge(temp_items_df, on=['w_id', 'd_id', 'c_id', 'o_id', 'ol_number'], how='inner')
+
+    # filter rows with 2 of the same items
+    two_items_df = two_items_df[two_items_df['i1_id'] != two_items_df['i2_id']]
+
+    # join 2 items table to get a table with 2 different customers with the same items in their order`
+    temp_2_items_df = two_items_df.rename(columns={'w_id': 'w2_id', 'd_id': 'd2_id',
+        'c_id': 'c2_id', 'o_id': 'o2_id', 'ol_number': 'ol_number2'})
+
+    two_items_df = two_items_df.rename(columns={'w_id': 'w1_id', 'd_id': 'd1_id',
+        'c_id': 'c1_id', 'o_id': 'o1_id', 'ol_number': 'ol_number1'})
+    
+    r_c_i = two_items_df.merge(temp_2_items_df, on=['i1_id', 'i2_id'], how='inner')
+    
+    # filter rows where customers are the same
+    related_customers = r_c_i[r_c_i['w1_id'] != r_c_i['w2_id']]
+
+    # write customer identifier
+    output_file.write(f"C_W_ID: {w_id} C_D_ID: {d_id} C_ID: {c_id}")
+
+    formatted_res = format_res(related_customers)
+    output_file.write(formatted_res)
+
+    return executed
+
+
 if __name__ == '__main__':
     print(sys.argv)
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 5:
         print("You must provide exactly 5 arguments!")
         sys.exit(1)
 
@@ -238,6 +380,14 @@ if __name__ == '__main__':
                             # is_successfully_executed = process_i(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 'o':
                             is_successfully_executed = process_o(session, txn_keys, output_file)
+                        if txn_keys[0].lower() == 'd':
+                            is_successfully_executed = process_d(session, txn_keys, output_file)
+                            if (not is_successfully_executed):
+                                print("failed txn d")
+                        if txn_keys[0].lower() == 'r':
+                            is_successfully_executed = process_r(session, txn_keys, output_file)
+                            if (not is_successfully_executed):
+                                print("failed txn r")
                         if is_successfully_executed:
                             txn_end_time = time.time()
                             latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms

@@ -1,8 +1,10 @@
 import psycopg2
 from psycopg2 import sql
+import time 
 
 def deliver(host, database, user, password, warehouse_id, carrier_id):
     conn = None
+    start_time = time.time()
     try:
         # Establish connection to the database
         conn = psycopg2.connect(host=host, database=database, user=user, password=password)
@@ -81,6 +83,10 @@ def deliver(host, database, user, password, warehouse_id, carrier_id):
 
         if cur: 
             cur.close()
+
+        end_time = time.time()
+        latency = (end_time - start_time) * 1000
+        return latency
 
 # Example usage
 deliver(host="localhost", database="project", user="cs4224d", password="1234", 

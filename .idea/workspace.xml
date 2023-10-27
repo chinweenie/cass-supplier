@@ -5,15 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9307a6a5-d964-415f-a51b-72625b7f589c" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/batch_start1.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/task2_executable.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/batch_start.sh" beforeDir="false" afterPath="$PROJECT_DIR$/batch_start.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/init-cassandra.sh" beforeDir="false" afterPath="$PROJECT_DIR$/init-cassandra.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup_scripts/startup.cql" beforeDir="false" afterPath="$PROJECT_DIR$/setup_scripts/startup.cql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/start_cass.sh" beforeDir="false" afterPath="$PROJECT_DIR$/start_cass.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/start_clients_cass.sh" beforeDir="false" afterPath="$PROJECT_DIR$/start_clients_cass.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -176,7 +168,8 @@
       <workItem from="1698063719347" duration="17879000" />
       <workItem from="1698142804016" duration="1023000" />
       <workItem from="1698156472819" duration="16963000" />
-      <workItem from="1698238673495" duration="12313000" />
+      <workItem from="1698238673495" duration="14535000" />
+      <workItem from="1698374863854" duration="924000" />
     </task>
     <servers />
   </component>
