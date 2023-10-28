@@ -10,3 +10,4 @@ CASS_DIR="/temp/teamd-cass/apache-cassandra-4.1.3/bin"
 # Allocate the specified node
 source .bashrc
 salloc -p long -w $NODE_NAME
+
