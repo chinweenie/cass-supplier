@@ -17,7 +17,8 @@ We are ready to run the program now, following these steps:
     - d. run client servers - app.py on all the nodes
     - e. generate result reports into /temp/teamd-cass/apache-cassandra-4.1.3/bin/data_files/results/ 
     - f. sleep for 3600s and then shut down
-3. From local machine, run the following shell script to copy out the generated reports. This would copy the directory into your Desktop.
+3. run ```sacct -j <job_id> --format=JobID,Start,End,Elapsed,REQCPUS,ALLOCTRES%30,Node``` to check task status in the batch job.
+4. From local machine, run the following shell script to copy out the generated reports. This would copy the directory into your Desktop.
 ```
 scp -r cs4224d@192.168.48.249:/temp/teamd-cass/apache-cassandra-4.1.3/bin/data_files/results ~/Desktop/results_xcnd30
 scp -r cs4224d@192.168.48.250:/temp/teamd-cass/apache-cassandra-4.1.3/bin/data_files/results ~/Desktop/results_xcnd31
