@@ -164,8 +164,8 @@ CREATE TABLE IF NOT EXISTS supplier.stocks
     S_DIST_09    VARCHAR,
     S_DIST_10    VARCHAR,
     S_DATA       VARCHAR,
-    PRIMARY KEY ((S_W_ID), S_I_ID, S_QUANTITY)
-) WITH CLUSTERING ORDER BY (S_I_ID ASC, S_QUANTITY DESC);
+    PRIMARY KEY ((S_W_ID), S_I_ID)
+) WITH CLUSTERING ORDER BY (S_I_ID ASC);
 
 CREATE TABLE IF NOT EXISTS supplier.undelivered_orders_by_warehouse_district
 (
@@ -187,17 +187,6 @@ CREATE TABLE IF NOT EXISTS supplier.orders_by_warehouse_district_customer
     I_ID        INT,
     PRIMARY KEY ((W_ID, D_ID, C_ID), O_ID, OL_NUMBER)
 );
-
-CREATE TABLE IF NOT EXISTS supplier.stock_level_transaction
-(
-    W_ID         INT,
-    D_ID         INT,
-    OL_O_ID      INT,
-    OL_NUMBER    INT,
-    I_ID         INT,
-    S_QUANTITY   DECIMAL,
-    PRIMARY KEY ((W_ID,D_ID),OL_O_ID,OL_Number)
-) WITH CLUSTERING ORDER BY (OL_O_ID DESC);
 
 CREATE TABLE IF NOT EXISTS supplier.popular_item_transaction (
 W_ID         INT,
