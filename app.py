@@ -176,7 +176,8 @@ def process_s(db, values, output_file):
     for s in s_res:
         if s.s_quantity < T:
             count += 1
-    output_file.write(count)
+    formatted_res = format_res({'number of items with low stock quantity':count})
+    output_file.write(formatted_res)
     executed = True
     return executed
 
@@ -192,8 +193,8 @@ def process_i(db, values, output_file):
     L = int(values[3])
 
     last_order_num_lookup_statement = db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
-    N_res = db.execute(last_order_num_lookup_statement, (w_id, d_id))
-    N = N_res[0].d_next_o_id
+    N_res = db.execute(last_order_num_lookup_statement, (w_id, d_id)).one()
+    N = N_res.d_next_o_id
 
     last_L_order_lookup_statement = db.prepare(
         'select o_id, o_entry_d, c_name, i_id, i_name, ol_quantity from popular_item_transaction where w_id=? and d_id=? and o_id >= ?;')
