@@ -619,7 +619,7 @@ if __name__ == '__main__':
                                 txn_inputs.append(txn_keys)
                                 m -= 1
                                 if m == 0:
-                                    is_successfully_executed = process_n(session, txn_inputs)
+                                    is_successfully_executed = process_n(session, txn_inputs, output_file)
                         if txn_keys[0].lower() == 'p':
                             is_successfully_executed = process_p(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 't':
