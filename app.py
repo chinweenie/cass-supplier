@@ -647,7 +647,6 @@ if __name__ == '__main__':
 
         cluster.shutdown()
 
-        '''
         elapsed_time = time.time() - start_time  # In seconds
         throughput = total_transactions / elapsed_time  # Transactions per second
 
@@ -665,7 +664,7 @@ if __name__ == '__main__':
             f.write(f"Median transaction latency: {median_latency:.2f} ms\n")
             f.write(f"95th percentile transaction latency: {perc_95_latency:.2f} ms\n")
             f.write(f"99th percentile transaction latency: {perc_99_latency:.2f} ms\n")
-        '''
+        
 
     except Exception as e:
         print(f"An unexpected error occurred: {type(e).__name__}")
