@@ -416,7 +416,7 @@ def process_n(db, values, output_file):
         if item[1] != w_id :
             all_local = 0
             break
-    o_entry_date = datetime.datetime.now()
+    o_entry_date = datetime.now()
 
     not_success = True
     while not_success:
@@ -428,7 +428,7 @@ def process_n(db, values, output_file):
 
         # create a new order
         o_res = db.execute(create_order_statement, (w_id, d_id, N, c_id, m, None, all_local, o_entry_date))
-        is_order_create_success = o_res[0].applied
+        is_order_create_success = o_res.one().applied
         not_success = False if is_order_create_success else True
 
     total_amount = 0
@@ -574,7 +574,7 @@ if __name__ == '__main__':
                                 txn_inputs.append(txn_keys)
                                 m -= 1
                                 if m == 0:
-                                    process_n(session, txn_inputs)
+                                    is_successfully_executed = process_n(session, txn_inputs)
                         if txn_keys[0].lower() == 'p':
                             is_successfully_executed = process_p(session, txn_keys, output_file)
                         if txn_keys[0].lower() == 't':
