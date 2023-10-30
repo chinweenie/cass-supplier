@@ -3,3 +3,4 @@
 *.txt
 copy_stats.sh
 cass_stats/
+reports/
