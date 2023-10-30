@@ -241,8 +241,6 @@ def process_d(db, values, output_file):
         oldest_undelivered_order = db.execute(oldest_undel_order_per_wid_did, [w_id, d_id]).one()
         oldest_undelivered_orders.append(oldest_undelivered_order)
 
-    if len(oldest_undelivered_orders) < 10:
-        return executed
 
     update_carrier_stmt = db.prepare("UPDATE orders SET o_carrier_id = ? WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?")
     update_orders_by_customer_stt = db.prepare("UPDATE orders_by_customer SET o_carrier_id = ? WHERE c_w_id = ? AND "
@@ -264,8 +262,10 @@ def process_d(db, values, output_file):
         order = oldest_undelivered_orders[d_id - 1]
 
         if (order == None):
-            print(f"warehouse: {w_id} district: {d_id} has no undelivered orders!")
+            #print(f"warehouse: {w_id} district: {d_id} has no undelivered orders!")
             continue
+
+        #print(f"processing warehouse: {w_id} district: {d_id}")
 
         o_w_id = int(order.o_w_id)
         o_d_id = int(order.o_d_id)
@@ -273,9 +273,9 @@ def process_d(db, values, output_file):
         o_c_id = int(order.o_c_id)
 
         # update carrier_id in orders table
-        db.execute(update_carrier_stmt, [carrier_id, o_w_id, o_d_id, o_id])
+        db.execute_async(update_carrier_stmt, [carrier_id, o_w_id, o_d_id, o_id])
         # update carrier_id in orders_by_customer table
-        db.execute(update_orders_by_customer_stt, (carrier_id, o_w_id, o_d_id, o_c_id, o_id))
+        db.execute_async(update_orders_by_customer_stt, (carrier_id, o_w_id, o_d_id, o_c_id, o_id))
 
         # get order_lines corresponding to the order
         order_lines = db.execute(get_order_lines_stmt, [o_w_id, o_d_id, o_id])
@@ -297,13 +297,13 @@ def process_d(db, values, output_file):
             ol_number = ol.ol_number
 
             # update order delivery date time
-            db.execute(update_order_lines_stmt, [curr_timestamp, o_w_id, o_d_id, o_id, ol_number])
+            db.execute_async(update_order_lines_stmt, [curr_timestamp, o_w_id, o_d_id, o_id, ol_number])
 
             # calculate total sum of order
             total_order_amount = total_order_amount + Decimal(ol.ol_amount)
 
         # update customer tables with total amounts and delivery count
-        db.execute(update_customer_stmt, [total_order_amount, new_delivery_count, o_w_id, o_d_id, o_c_id])
+        db.execute_async(update_customer_stmt, [total_order_amount, new_delivery_count, o_w_id, o_d_id, o_c_id])
 
         # Handle top_balances to update c_balance
         warehouses = SimpleStatement(f"""SELECT * FROM warehouses WHERE w_id=%s""")
@@ -338,11 +338,13 @@ def process_d(db, values, output_file):
 
     delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
             WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
+
     # delete delivered orders from undelivered orders table
     for order in oldest_undelivered_orders:
         if (order == None):
             continue
-        db.execute(delete_order_stmt, [order.o_w_id, order.o_d_id, order.o_id])
+        #print(f"deleting w: {order.o_w_id}, d: {order.o_d_id}, o: {order.o_id}")
+        db.execute_async(delete_order_stmt, [order.o_w_id, order.o_d_id, order.o_id])
 
     executed = True
     return executed
@@ -615,6 +617,8 @@ if __name__ == '__main__':
             count += 1
 
         cluster.shutdown()
+
+        '''
         elapsed_time = time.time() - start_time  # In seconds
         throughput = total_transactions / elapsed_time  # Transactions per second
 
@@ -622,6 +626,7 @@ if __name__ == '__main__':
         median_latency = statistics.median(latencies)
         perc_95_latency = statistics.quantiles(latencies, n=100)[94]  # 95th percentile
         perc_99_latency = statistics.quantiles(latencies, n=100)[98]  # 99th percentile
+                
 
         with open(f"{directory}stderr", "w") as f:
             f.write(f"Total number of transactions processed: {total_transactions}\n")
@@ -631,6 +636,7 @@ if __name__ == '__main__':
             f.write(f"Median transaction latency: {median_latency:.2f} ms\n")
             f.write(f"95th percentile transaction latency: {perc_95_latency:.2f} ms\n")
             f.write(f"99th percentile transaction latency: {perc_99_latency:.2f} ms\n")
+        '''
 
     except Exception as e:
         print(f"An unexpected error occurred: {type(e).__name__}")
