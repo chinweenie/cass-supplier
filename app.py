@@ -9,6 +9,9 @@ from decimal import Decimal
 from cassandra.query import BatchStatement, SimpleStatement, ValueSequence
 from cassandra import ConsistencyLevel
 import pandas as pd
+from cassandra.policies import TokenAwarePolicy, RoundRobinPolicy, DowngradingConsistencyRetryPolicy
+from cassandra import ConsistencyLevel
+from cassandra.cluster import Cluster, ExecutionProfile
 
 from datetime import datetime
 
@@ -540,15 +543,25 @@ if __name__ == '__main__':
         sys.exit(1)
 
     ip_address = sys.argv[1]
-    filenames = [sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]]
+    filenames = [sys.argv[2],
+                 sys.argv[3],
+                 sys.argv[4],
+                 sys.argv[5]
+                 ]
 
     print(f"Received IP Address: {ip_address}")
     print(f"Received filename: {filenames}")
 
+    cluster_profile = ExecutionProfile(
+        load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
+        consistency_level=ConsistencyLevel.QUORUM,
+        retry_policy=DowngradingConsistencyRetryPolicy(),
+        request_timeout=120
+    )
+
     cluster = Cluster([ip_address])
     session = cluster.connect()
     session.set_keyspace('supplier')
-    session.default_timeout = 120
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
     # directory = ''
     total_transactions = 0

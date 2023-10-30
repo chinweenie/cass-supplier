@@ -10,3 +10,6 @@ COPY supplier.orders_by_customer (c_w_id,c_d_id,c_id,o_id,o_carrier_id,o_entry_d
 COPY supplier.undelivered_orders_by_warehouse_district (o_w_id,o_d_id,o_id,o_c_id,o_carrier_id) FROM '/temp/teamd-cass/apache-cassandra-4.1.3/bin/data_files/undelivered_orders.csv' WITH DELIMITER=',' AND HEADER=TRUE;
 COPY supplier.orders_by_warehouse_district_customer (w_id,d_id,c_id,o_id,ol_number,i_id) FROM '/temp/teamd-cass/apache-cassandra-4.1.3/bin/data_files/orders_by_warehouse_district_customer_df.csv' WITH DELIMITER=',' AND HEADER=TRUE;
 COPY supplier.popular_item_transaction (w_id,d_id,o_id,o_entry_d,c_name,ol_number,i_id,ol_quantity,i_name) FROM '/temp/teamd-cass/apache-cassandra-4.1.3/bin/data_files/popular_items_table.csv' WITH DELIMITER=',' AND HEADER=TRUE;
+
+
+
