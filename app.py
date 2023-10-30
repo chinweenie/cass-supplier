@@ -366,7 +366,7 @@ def process_r(db, values, output_file):
     # work with df from now, since we'll be joining
     items_df = pd.DataFrame(items_table)
     item_list = list(set(items_df['i_id']))
-    print("item list: " + str(item_list))
+    # print("item list: " + str(item_list))
 
     temp_items_df = items_df.rename(columns={'i_id': 'i2_id'})
     items_df = items_df.rename(columns={'i_id': 'i1_id'})
