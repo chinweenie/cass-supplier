@@ -195,12 +195,11 @@ def process_i(db, values, output_file):
     d_id = int(values[2])
     L = int(values[3])
 
-    last_order_num_lookup_statement = db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
+    last_order_num_lookup_statement = "SELECT * FROM districts WHERE d_w_id = %s AND d_id = %s"
     N_res = db.execute(last_order_num_lookup_statement, (w_id, d_id)).one()
     N = N_res.d_next_o_id
 
-    last_L_order_lookup_statement = db.prepare(
-        'select o_id, o_entry_d, c_name, i_id, i_name, ol_quantity from popular_item_transaction where w_id=? and d_id=? and o_id >= ?;')
+    last_L_order_lookup_statement = "select o_id, o_entry_d, c_name, i_id, i_name, ol_quantity from popular_item_transaction where w_id=%s and d_id=%s and o_id >= %s"
     S_res = db.execute(last_L_order_lookup_statement, (w_id, d_id, N - L))
     S_df = pd.DataFrame(list(S_res))
 
