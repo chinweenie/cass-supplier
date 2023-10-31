@@ -584,7 +584,7 @@ if __name__ == '__main__':
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
         consistency_level=ConsistencyLevel.QUORUM,
         retry_policy=DowngradingConsistencyRetryPolicy(),
-        request_timeout=300
+        request_timeout=120
     )
 
     cluster = Cluster([ip_address])
@@ -631,10 +631,10 @@ if __name__ == '__main__':
                         is_successfully_executed = process_d(session, txn_keys, output_file)
                         if not is_successfully_executed:
                             print("failed txn d")
-                    # if txn_keys[0].lower() == 'r':
-                    #     is_successfully_executed = process_r(session, txn_keys, output_file)
-                    #     if (not is_successfully_executed):
-                    #         print("failed txn r")
+                    if txn_keys[0].lower() == 'r':
+                        is_successfully_executed = process_r(session, txn_keys, output_file)
+                        if (not is_successfully_executed):
+                            print("failed txn r")
                     if is_successfully_executed:
                         txn_end_time = time.time()
                         latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms
