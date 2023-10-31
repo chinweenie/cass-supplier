@@ -570,7 +570,7 @@ def process_n(db, values, output_file):
 if __name__ == '__main__':
     print(sys.argv)
     if len(sys.argv) != 3:
-        print("You must provide exactly 5 arguments!")
+        print("You must provide exactly 2 arguments!")
         sys.exit(1)
 
     ip_address = sys.argv[1]
@@ -591,14 +591,14 @@ if __name__ == '__main__':
     session = cluster.connect()
     session.set_keyspace('supplier')
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
-    shared_dir = "/home/stuproj/cs4224d/"
+    shared_dir = "/home/stuproj/cs4224d/cass_log/"
     # directory = ''
     total_transactions = 0
     latencies = []  # List to store latency of each transaction
     start_time = time.time()
     try:
         # stdout for each client
-        with open(f"{directory}stdout_client{filename}", 'w') as output_file:
+        with open(f"{shared_dir}stdout_client{filename}", 'w') as output_file:
             dir_filename = os.path.join(directory, filename)
             with open(dir_filename, 'r') as file:
                 for line in file:
@@ -640,9 +640,11 @@ if __name__ == '__main__':
                         latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms
                         latencies.append(latency)
                         total_transactions += 1
-
         cluster.shutdown()
-
+    except Exception as e:
+        print(f"An unexpected error occurred: {type(e).__name__}")
+        print(str(e))
+    finally:
         elapsed_time = time.time() - start_time  # In seconds
         throughput = total_transactions / elapsed_time  # Transactions per second
 
@@ -650,9 +652,9 @@ if __name__ == '__main__':
         median_latency = statistics.median(latencies)
         perc_95_latency = statistics.quantiles(latencies, n=100)[94]  # 95th percentile
         perc_99_latency = statistics.quantiles(latencies, n=100)[98]  # 99th percentile
-                
-        # stderr for each client 
-        with open(f"{directory}stderr_client{filename}", "w") as f:
+
+        # stderr for each client
+        with open(f"{shared_dir}stderr_client{filename}", "w") as f:
             f.write(f"Total number of transactions processed: {total_transactions}\n")
             f.write(f"Total elapsed time for processing the transactions: {elapsed_time:.2f} seconds\n")
             f.write(f"Transaction throughput: {throughput:.2f} transactions/second\n")
@@ -660,7 +662,7 @@ if __name__ == '__main__':
             f.write(f"Median transaction latency: {median_latency:.2f} ms\n")
             f.write(f"95th percentile transaction latency: {perc_95_latency:.2f} ms\n")
             f.write(f"99th percentile transaction latency: {perc_99_latency:.2f} ms\n")
-        
+
         # client.csv for all clients
         with open(f"{shared_dir}client.csv", 'a') as f:
             writer = csv.writer(f)
@@ -668,6 +670,4 @@ if __name__ == '__main__':
                 writer.writerow(["client_number", "measurement_a","measurement_b","measurement_c","measurement_d","measurement_e","measurement_f","measurement_g"])
             writer.writerow([client, total_transactions, round(elapsed_time, 2), round(throughput,2), round(avg_latency,2), round(median_latency,2), round(perc_95_latency,2), round(perc_99_latency,2)])
 
-    except Exception as e:
-        print(f"An unexpected error occurred: {type(e).__name__}")
-        print(str(e))
+

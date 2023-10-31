@@ -8,18 +8,30 @@ from cassandra import ConsistencyLevel
 from cassandra.policies import TokenAwarePolicy, RoundRobinPolicy, DowngradingConsistencyRetryPolicy
 from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster, ExecutionProfile
+import sys
 
 if __name__ == '__main__':
+    print(sys.argv)
+    if len(sys.argv) != 2:
+        print("You must provide exactly 1 arguments!")
+        sys.exit(1)
+
+    ip_address = sys.argv[1]
+
+
+    print(f"Received IP Address: {ip_address}")
+
+
     cluster_profile = ExecutionProfile(
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
         consistency_level=ConsistencyLevel.QUORUM,
         retry_policy=DowngradingConsistencyRetryPolicy(),
         request_timeout=120
     )
-    cluster = Cluster(['0.0.0.0'], port=9042)
+    cluster = Cluster([ip_address], port=9042)
     session = cluster.connect("supplier")
     session.row_factory = tuple_factory
-    directory = '/home/stuproj/cs4224d'
+    directory = '/home/stuproj/cs4224d/cass_log/'
 
     queries = ["select sum(W_YTD) from Warehouses", 
                "select sum(D_YTD), sum(D_NEXT_O_ID) from Districts",
