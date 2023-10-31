@@ -46,8 +46,8 @@ srun --nodes=1 --ntasks=1 --cpus-per-task=4 --nodelist=xcnd33 bash -c "python $C
 srun --nodes=1 --ntasks=1 --cpus-per-task=4 --nodelist=xcnd34 bash -c "python $CASS_DIR/xact_files/app.py 192.168.48.253 ${shuffled_array[16]} ${shuffled_array[17]} ${shuffled_array[18]} ${shuffled_array[19]}"
 echo "Executed srun on all nodes."
 
-sleep 3600
+#sleep 3600
 # Killing Cassandra on all nodes
-srun --nodes=5 --ntasks=5 --cpus-per-task=10 --nodelist=xcnd30,xcnd31,xcnd32,xcnd33,xcnd34 bash -c "kill $(ps aux | grep 'CassandraDaemon' | grep -v 'grep' | awk '{print $2}')"
+#srun --nodes=5 --ntasks=5 --cpus-per-task=10 --nodelist=xcnd30,xcnd31,xcnd32,xcnd33,xcnd34 bash -c "kill $(ps aux | grep 'CassandraDaemon' | grep -v 'grep' | awk '{print $2}')"
 wait
 

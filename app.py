@@ -591,7 +591,7 @@ if __name__ == '__main__':
     session = cluster.connect()
     session.set_keyspace('supplier')
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
-    shared_dir = "/home/stuproj/cs4224d"
+    shared_dir = "/home/stuproj/cs4224d/"
     # directory = ''
     total_transactions = 0
     latencies = []  # List to store latency of each transaction
