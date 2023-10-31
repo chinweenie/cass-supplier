@@ -570,7 +570,7 @@ def process_n(db, values, output_file):
 if __name__ == '__main__':
     print(sys.argv)
     if len(sys.argv) != 3:
-        print("You must provide exactly 5 arguments!")
+        print("You must provide exactly 2 arguments!")
         sys.exit(1)
 
     ip_address = sys.argv[1]
@@ -584,7 +584,7 @@ if __name__ == '__main__':
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
         consistency_level=ConsistencyLevel.QUORUM,
         retry_policy=DowngradingConsistencyRetryPolicy(),
-        request_timeout=120
+        request_timeout=300
     )
 
     cluster = Cluster([ip_address])
@@ -598,7 +598,7 @@ if __name__ == '__main__':
     start_time = time.time()
     try:
         # stdout for each client
-        with open(f"{directory}stdout_client{filename}", 'w') as output_file:
+        with open(f"{shared_dir}batch_log/stdout_client{filename}", 'w') as output_file:
             dir_filename = os.path.join(directory, filename)
             with open(dir_filename, 'r') as file:
                 for line in file:
@@ -631,18 +631,20 @@ if __name__ == '__main__':
                         is_successfully_executed = process_d(session, txn_keys, output_file)
                         if not is_successfully_executed:
                             print("failed txn d")
-                    if txn_keys[0].lower() == 'r':
-                        is_successfully_executed = process_r(session, txn_keys, output_file)
-                        if (not is_successfully_executed):
-                            print("failed txn r")
+                    # if txn_keys[0].lower() == 'r':
+                    #     is_successfully_executed = process_r(session, txn_keys, output_file)
+                    #     if (not is_successfully_executed):
+                    #         print("failed txn r")
                     if is_successfully_executed:
                         txn_end_time = time.time()
                         latency = (txn_end_time - txn_start_time) * 1000  # Convert to ms
                         latencies.append(latency)
                         total_transactions += 1
-
         cluster.shutdown()
-
+    except Exception as e:
+        print(f"An unexpected error occurred: {type(e).__name__}")
+        print(str(e))
+    finally:
         elapsed_time = time.time() - start_time  # In seconds
         throughput = total_transactions / elapsed_time  # Transactions per second
 
@@ -650,9 +652,9 @@ if __name__ == '__main__':
         median_latency = statistics.median(latencies)
         perc_95_latency = statistics.quantiles(latencies, n=100)[94]  # 95th percentile
         perc_99_latency = statistics.quantiles(latencies, n=100)[98]  # 99th percentile
-                
-        # stderr for each client 
-        with open(f"{directory}stderr_client{filename}", "w") as f:
+
+        # stderr for each client
+        with open(f"{shared_dir}batch_log/stderr_client{filename}", "w") as f:
             f.write(f"Total number of transactions processed: {total_transactions}\n")
             f.write(f"Total elapsed time for processing the transactions: {elapsed_time:.2f} seconds\n")
             f.write(f"Transaction throughput: {throughput:.2f} transactions/second\n")
@@ -660,14 +662,12 @@ if __name__ == '__main__':
             f.write(f"Median transaction latency: {median_latency:.2f} ms\n")
             f.write(f"95th percentile transaction latency: {perc_95_latency:.2f} ms\n")
             f.write(f"99th percentile transaction latency: {perc_99_latency:.2f} ms\n")
-        
+
         # client.csv for all clients
-        with open(f"{shared_dir}client.csv", 'a') as f:
+        with open(f"{shared_dir}batch_log/client.csv", 'a') as f:
             writer = csv.writer(f)
             if f.tell() == 0:
                 writer.writerow(["client_number", "measurement_a","measurement_b","measurement_c","measurement_d","measurement_e","measurement_f","measurement_g"])
             writer.writerow([client, total_transactions, round(elapsed_time, 2), round(throughput,2), round(avg_latency,2), round(median_latency,2), round(perc_95_latency,2), round(perc_99_latency,2)])
 
-    except Exception as e:
-        print(f"An unexpected error occurred: {type(e).__name__}")
-        print(str(e))
+

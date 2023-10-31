@@ -2,7 +2,7 @@
 
 ## Cassandra
 Before starting the Cassandra cluster, we need to compile the csv files needed for data loading
-1. ssh to node that you will be loading the data into Cassandra server. In our case, it is xcnd30.
+1. ssh to node that you will be loading the data into Cassandra server. In our case, it is xcnd32.
 2. All of the data files provided should reside in /temp/teamd-cass/apache-cassandra-4.1.3/bin/data_files
 3. Place initialize_csv_files.py inside the above folder.
 4. Run ```python initialize_csv_files.py```
