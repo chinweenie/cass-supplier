@@ -182,21 +182,6 @@ def process_related_customers_txns():
     orders_by_warehouse_district_customer_df.to_csv(FILEDIR + 'orders_by_warehouse_district_customer_df.csv',
                                                     index=False)
 
-
-# for txn 2.5
-def process_storage_under_threshold():
-    order_line_df = pandas.read_csv(FILEDIR + "order_line_df.csv")
-    stock_df = pandas.read_csv(FILEDIR + "stock_df.csv")
-
-    stock_df = stock_df[['s_w_id', 's_i_id', 's_quantity']].rename(
-        columns={'s_w_id': 'w_id', 's_i_id': 'i_id'})
-    order_line_df = order_line_df[['ol_w_id', 'ol_d_id', 'ol_o_id', 'ol_number', 'ol_i_id']].rename(
-        columns={'ol_w_id': 'w_id', 'ol_d_id': 'd_id', 'ol_i_id': 'i_id'})
-
-    df = pandas.merge(order_line_df, stock_df, how='inner')
-    df.to_csv(FILEDIR + 'storage_under_treshold.csv', index=False)
-
-
 # for txn 2.6
 def process_popular_items():
     district_df = pandas.read_csv(FILEDIR + "district_df.csv")
