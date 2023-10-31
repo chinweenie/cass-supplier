@@ -9,7 +9,7 @@ Before starting the Cassandra cluster, we need to compile the csv files needed f
 5. You should see several df.csv files generated
 
 We are ready to run the program now, following these steps:
-1. From any node that you place batch_start1.sh in, run ```mkdir batch_log && sbatch batch_start1.sh```
+1. From any node that you place batch_start1.sh in, run ```mkdir cass_log && sbatch batch_start1.sh```
 2. This should submit a slurm batch job to
     - a. start Cassandra servers in the nodes specified in the script,
     - b. create schema 

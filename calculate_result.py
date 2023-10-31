@@ -31,7 +31,7 @@ if __name__ == '__main__':
     cluster = Cluster([ip_address], port=9042)
     session = cluster.connect("supplier")
     session.row_factory = tuple_factory
-    directory = '/home/stuproj/cs4224d/batch_log/'
+    directory = '/home/stuproj/cs4224d/cass_log/'
 
     queries = ["select sum(W_YTD) from Warehouses", 
                "select sum(D_YTD), sum(D_NEXT_O_ID) from Districts",

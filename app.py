@@ -591,14 +591,14 @@ if __name__ == '__main__':
     session = cluster.connect()
     session.set_keyspace('supplier')
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
-    shared_dir = "/home/stuproj/cs4224d/"
+    shared_dir = "/home/stuproj/cs4224d/cass_log/"
     # directory = ''
     total_transactions = 0
     latencies = []  # List to store latency of each transaction
     start_time = time.time()
     try:
         # stdout for each client
-        with open(f"{shared_dir}batch_log/stdout_client{filename}", 'w') as output_file:
+        with open(f"{shared_dir}stdout_client{filename}", 'w') as output_file:
             dir_filename = os.path.join(directory, filename)
             with open(dir_filename, 'r') as file:
                 for line in file:
@@ -654,7 +654,7 @@ if __name__ == '__main__':
         perc_99_latency = statistics.quantiles(latencies, n=100)[98]  # 99th percentile
 
         # stderr for each client
-        with open(f"{shared_dir}batch_log/stderr_client{filename}", "w") as f:
+        with open(f"{shared_dir}stderr_client{filename}", "w") as f:
             f.write(f"Total number of transactions processed: {total_transactions}\n")
             f.write(f"Total elapsed time for processing the transactions: {elapsed_time:.2f} seconds\n")
             f.write(f"Transaction throughput: {throughput:.2f} transactions/second\n")
@@ -664,7 +664,7 @@ if __name__ == '__main__':
             f.write(f"99th percentile transaction latency: {perc_99_latency:.2f} ms\n")
 
         # client.csv for all clients
-        with open(f"{shared_dir}batch_log/client.csv", 'a') as f:
+        with open(f"{shared_dir}client.csv", 'a') as f:
             writer = csv.writer(f)
             if f.tell() == 0:
                 writer.writerow(["client_number", "measurement_a","measurement_b","measurement_c","measurement_d","measurement_e","measurement_f","measurement_g"])
