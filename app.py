@@ -163,11 +163,11 @@ def process_s(db, values, output_file):
     T = Decimal(values[3])
     L = int(values[4])
 
-    last_order_num_lookup_statement = db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
+    last_order_num_lookup_statement = "SELECT * FROM districts WHERE d_w_id = %s AND d_id = %s"
     district_res = db.execute(last_order_num_lookup_statement, (w_id, d_id)).one()
     last_order_num = district_res.d_next_o_id
 
-    items_lookup_statement = db.prepare('select ol_i_id from order_lines where ol_w_id = ? and ol_d_id = ? and ol_o_id >= ?')
+    items_lookup_statement = "select ol_i_id from order_lines where ol_w_id = %s and ol_d_id = %s and ol_o_id >= %s"
     items_res = db.execute(items_lookup_statement, (w_id, d_id, last_order_num - L))
 
     items = set()
