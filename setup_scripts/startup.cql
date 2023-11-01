@@ -19,6 +19,8 @@ DROP TABLE IF EXISTS supplier.popular_item_transaction;
 DROP TYPE IF EXISTS supplier.address;
 DROP TYPE IF EXISTS supplier.name;
 
+DROP INDEX IF EXISTS item_id ON supplier.orders_by_warehouse_district_customer;
+
 CREATE TYPE supplier.name
     (
     FIRST VARCHAR,
@@ -188,16 +190,7 @@ CREATE TABLE IF NOT EXISTS supplier.orders_by_warehouse_district_customer
     PRIMARY KEY ((W_ID, D_ID, C_ID), O_ID, OL_NUMBER)
 );
 
-CREATE TABLE IF NOT EXISTS supplier.stock_level_transaction
-(
-    W_ID         INT,
-    D_ID         INT,
-    OL_O_ID      INT,
-    OL_NUMBER    INT,
-    I_ID         INT,
-    S_QUANTITY   DECIMAL,
-    PRIMARY KEY ((W_ID,D_ID),OL_O_ID,OL_Number)
-) WITH CLUSTERING ORDER BY (OL_O_ID DESC);
+CREATE INDEX item_id ON supplier.orders_by_warehouse_district_customer (I_ID);
 
 CREATE TABLE IF NOT EXISTS supplier.popular_item_transaction (
 W_ID         INT,
