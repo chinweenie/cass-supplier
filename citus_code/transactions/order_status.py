@@ -12,17 +12,17 @@ def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
         print('connection success to:')
         print(f'host: {host}  database:{database}  user:{user}')
 
-        # Begin transaction
-        conn.autocommit = False
-        # Step0: Lock the orders, customer, and order_line tables
-        lock_orders_query = sql.SQL("LOCK TABLE orders IN SHARE MODE")
-        cur.execute(lock_orders_query)
+        # # Begin transaction
+        # conn.autocommit = False
+        # # Step0: Lock the orders, customer, and order_line tables
+        # lock_orders_query = sql.SQL("LOCK TABLE orders IN SHARE MODE")
+        # cur.execute(lock_orders_query)
 
-        lock_customer_query = sql.SQL("LOCK TABLE customer IN SHARE MODE")
-        cur.execute(lock_customer_query)
+        # lock_customer_query = sql.SQL("LOCK TABLE customer IN SHARE MODE")
+        # cur.execute(lock_customer_query)
 
-        lock_order_line_query = sql.SQL("LOCK TABLE order_line IN SHARE MODE")
-        cur.execute(lock_order_line_query)
+        # lock_order_line_query = sql.SQL("LOCK TABLE order_line IN SHARE MODE")
+        # cur.execute(lock_order_line_query)
 
         # step1: get customer information with customer identifier
         customer_info_query = sql.SQL("""
@@ -37,7 +37,7 @@ def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
 
             #step2: query the last order info from orders table 
             last_order_query = sql.SQL("""
-                SELECT o_id, o_entry_d, o_carrier_id FROM orders
+                SELECT o_id, o_entry_d, o_carrier_id FROM order
                 WHERE o_w_id = %s AND o_d_id = %s AND o_c_id = %s
                 ORDER BY o_id DESC LIMIT 1
             """).format(sql.Literal(c_w_id), sql.Literal(c_d_id), sql.Literal(c_id))

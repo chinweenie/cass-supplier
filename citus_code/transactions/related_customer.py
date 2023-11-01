@@ -12,18 +12,18 @@ def related_customer(host, database, user, password, c_w_id, c_d_id, c_id):
         print('connection success to:')
         print(f'host: {host}  database:{database}  user:{user}')
 
-        # Begin transaction
-        conn.autocommit = False
+        # # Begin transaction
+        # conn.autocommit = False
         
-        # Step0: Lock the orders, customer, and order_line tables
-        lock_orders_query = sql.SQL("LOCK TABLE orders IN SHARE MODE")
-        cur.execute(lock_orders_query)
+        # # Step0: Lock the orders, customer, and order_line tables
+        # lock_orders_query = sql.SQL("LOCK TABLE orders IN SHARE MODE")
+        # cur.execute(lock_orders_query)
 
-        lock_customer_query = sql.SQL("LOCK TABLE customer IN SHARE MODE")
-        cur.execute(lock_customer_query)
+        # lock_customer_query = sql.SQL("LOCK TABLE customer IN SHARE MODE")
+        # cur.execute(lock_customer_query)
 
-        lock_order_line_query = sql.SQL("LOCK TABLE order_line IN SHARE MODE")
-        cur.execute(lock_order_line_query)
+        # lock_order_line_query = sql.SQL("LOCK TABLE order_line IN SHARE MODE")
+        # cur.execute(lock_order_line_query)
         
         # need to split complex join down 
         # step1: Select candidate customer from customer table
@@ -38,7 +38,7 @@ def related_customer(host, database, user, password, c_w_id, c_d_id, c_id):
         # step2: Select all orders for given customer
         orders_query = sql.SQL("""
             select o_id 
-            from orders 
+            from order 
             where o_w_id = %s and o_d_id = %s and o_c_id = %s 
         """).format(sql.Literal(c_w_id), sql.Literal(c_d_id), sql.Literal(c_id))
         cur.execute(orders_query, (c_w_id, c_d_id, c_id))

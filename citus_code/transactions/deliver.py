@@ -12,24 +12,24 @@ def deliver(host, database, user, password, warehouse_id, carrier_id):
         print('connection success to:')
         print(f'host: {host}  database:{database}  user:{user}')
 
-        # Begin the transaction
-        conn.autocommit = False
+        # # Begin the transaction
+        # conn.autocommit = False
 
-        # Step0: Lock the orders, customer, and order_line tables
-        lock_orders_query = sql.SQL("LOCK TABLE orders IN EXCLUSIVE MODE")
-        cur.execute(lock_orders_query)
+        # # Step0: Lock the orders, customer, and order_line tables
+        # lock_orders_query = sql.SQL("LOCK TABLE orders IN EXCLUSIVE MODE")
+        # cur.execute(lock_orders_query)
 
-        lock_customer_query = sql.SQL("LOCK TABLE customer IN EXCLUSIVE MODE")
-        cur.execute(lock_customer_query)
+        # lock_customer_query = sql.SQL("LOCK TABLE customer IN EXCLUSIVE MODE")
+        # cur.execute(lock_customer_query)
 
-        lock_order_line_query = sql.SQL("LOCK TABLE order_line IN EXCLUSIVE MODE")
-        cur.execute(lock_order_line_query)
+        # lock_order_line_query = sql.SQL("LOCK TABLE order_line IN EXCLUSIVE MODE")
+        # cur.execute(lock_order_line_query)
 
         # Processing steps for each district (1 to 10)
         for district_no in range(1, 11):
             # Step 1: Find the smallest order number with O_CARRIER_ID = null
             smallest_order_query = sql.SQL("""
-                select min(o_id) from orders 
+                select min(o_id) from order 
                 where o_w_id = %s and o_d_id = %s and o_carrier_id is NULL
             """).format(sql.Literal(warehouse_id), sql.Literal(district_no))
             cur.execute(smallest_order_query, (warehouse_id, district_no))
@@ -38,7 +38,7 @@ def deliver(host, database, user, password, warehouse_id, carrier_id):
             if smallest_order_number is not None:
                 # Step 2: Update order X by setting O_CARRIER_ID to CARRIER_ID
                 update_order_query = sql.SQL("""
-                    update orders set o_carrier_id = %s 
+                    update order set o_carrier_id = %s 
                     where o_w_id = %s and o_d_id = %s and o_id = %s
                 """).format(sql.Literal(warehouse_id), sql.Literal(district_no), sql.Literal(smallest_order_number))
                 cur.execute(update_order_query, (carrier_id, warehouse_id, district_no, smallest_order_number))
@@ -56,7 +56,7 @@ def deliver(host, database, user, password, warehouse_id, carrier_id):
                         c_balance = c_balance + (select sum(ol_amount) from order_line where ol_w_id = %s and ol_d_id = %s and ol_o_id = %s),
                         c_delivery_cnt = c_delivery_cnt + 1
                     where c_w_id = %s and c_d_id = %s and c_id = (
-                        select o_c_id from orders 
+                        select o_c_id from order
                         where o_w_id = %s and o_d_id = %s and o_id = %s
                     )
                 """).format(sql.Literal(warehouse_id), sql.Literal(district_no), sql.Literal(smallest_order_number),
@@ -66,7 +66,7 @@ def deliver(host, database, user, password, warehouse_id, carrier_id):
                                                     warehouse_id, district_no, warehouse_id, 
                                                     district_no, smallest_order_number))
 
-            print(f'finish district:{district_no}')
+            # print(f'finish district:{district_no}')
 
         # Commit the transaction
         conn.commit()
