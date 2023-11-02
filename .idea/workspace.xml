@@ -5,13 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9307a6a5-d964-415f-a51b-72625b7f589c" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/cassandra.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/batch_start1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/batch_start1.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_files/initialize_csv_files.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_files/initialize_csv_files.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup_scripts/load_data.cql" beforeDir="false" afterPath="$PROJECT_DIR$/setup_scripts/load_data.cql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/start_cass.sh" beforeDir="false" afterPath="$PROJECT_DIR$/start_cass.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -175,7 +169,9 @@
       <workItem from="1698142804016" duration="1023000" />
       <workItem from="1698156472819" duration="16963000" />
       <workItem from="1698238673495" duration="14535000" />
-      <workItem from="1698374863854" duration="32982000" />
+      <workItem from="1698374863854" duration="62482000" />
+      <workItem from="1698567279811" duration="1549000" />
+      <workItem from="1698578354102" duration="13919000" />
     </task>
     <servers />
   </component>
@@ -202,6 +198,6 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/CassandraProj$initialize_csv_files.coverage" NAME="initialize_csv_files Coverage Results" MODIFIED="1695046158533" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/data_files" />
-    <SUITE FILE_PATH="coverage/CassandraProj$initialize_csv_files__1_.coverage" NAME="initialize_csv_files (1) Coverage Results" MODIFIED="1698423109398" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/data_files" />
+    <SUITE FILE_PATH="coverage/CassandraProj$initialize_csv_files__1_.coverage" NAME="initialize_csv_files (1) Coverage Results" MODIFIED="1698491206281" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/data_files" />
   </component>
 </project>

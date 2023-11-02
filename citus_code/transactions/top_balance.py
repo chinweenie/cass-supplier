@@ -12,12 +12,12 @@ def top_balance(host, database, user, password):
         print('connection success to:')
         print(f'host: {host}  database:{database}  user:{user}')
 
-        # Begin the transaction
-        conn.autocommit = False
+        # # Begin the transaction
+        # conn.autocommit = False
 
-        # Step0: Lock the customer table
-        lock_customer_query = sql.SQL("LOCK TABLE customer IN SHARE MODE")
-        cur.execute(lock_customer_query)
+        # # Step0: Lock the customer table
+        # lock_customer_query = sql.SQL("LOCK TABLE customer IN SHARE MODE")
+        # cur.execute(lock_customer_query)
 
         # find top-10 customers ranked in descending balance order
         top_customer_query = sql.SQL("""

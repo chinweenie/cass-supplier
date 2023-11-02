@@ -13,7 +13,6 @@ DROP TABLE IF EXISTS supplier.top_balances;
 DROP TABLE IF EXISTS supplier.orders_by_customer;
 DROP TABLE IF EXISTS supplier.undelivered_orders_by_warehouses_district;
 DROP TABLE IF EXISTS supplier.orders_by_warehouse_district_customer;
-DROP TABLE IF EXISTS supplier.stock_level_transaction;
 DROP TABLE IF EXISTS supplier.popular_item_transaction;
 
 DROP TYPE IF EXISTS supplier.address;
@@ -144,7 +143,7 @@ CREATE TABLE IF NOT EXISTS supplier.order_lines
     OL_SUPPLY_W_ID INT,
     OL_QUANTITY    DECIMAL,
     OL_DIST_INFO   VARCHAR,
-    PRIMARY KEY ((OL_W_ID, OL_D_ID, OL_O_ID), OL_NUMBER)
+    PRIMARY KEY ((OL_W_ID, OL_D_ID), OL_O_ID, OL_NUMBER)
 );
 
 CREATE TABLE IF NOT EXISTS supplier.stocks
@@ -166,8 +165,8 @@ CREATE TABLE IF NOT EXISTS supplier.stocks
     S_DIST_09    VARCHAR,
     S_DIST_10    VARCHAR,
     S_DATA       VARCHAR,
-    PRIMARY KEY ((S_W_ID), S_I_ID, S_QUANTITY)
-) WITH CLUSTERING ORDER BY (S_I_ID ASC, S_QUANTITY DESC);
+    PRIMARY KEY ((S_W_ID), S_I_ID)
+) WITH CLUSTERING ORDER BY (S_I_ID ASC);
 
 CREATE TABLE IF NOT EXISTS supplier.undelivered_orders_by_warehouse_district
 (
