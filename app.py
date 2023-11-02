@@ -183,6 +183,7 @@ def process_s(db, values, output_file):
     formatted_res = format_res({'number of items with low stock quantity':count})
     output_file.write(formatted_res)
     executed = True
+
     return executed
 
 
@@ -215,6 +216,7 @@ def process_i(db, values, output_file):
                                s_without_id_df,
                                p_df)
     output_file.write(formatted_res)
+
     executed = True
     return executed
 
@@ -357,16 +359,23 @@ def process_r(db, values, output_file):
     d_id = int(values[2])
     c_id = int(values[3])
 
+    # write customer identifier
+    output_file.write(f"C_W_ID: {w_id}, C_D_ID: {d_id}, C_ID: {c_id}")
+
     get_items_stmt = db.prepare(
         "SELECT w_id, d_id, c_id, o_id, i_id FROM orders_by_warehouse_district_customer WHERE w_id = ? AND d_id = ? AND c_id = ?")
     items_table = db.execute(get_items_stmt, [w_id, d_id, c_id])
 
     executed = True
 
-    # work with df from now, since we'll be joining
-    items_df = pd.DataFrame(items_table)
-    item_list = list(set(items_df['i_id']))
-    # print("item list: " + str(item_list))
+    items_df = pd.DataFrame([d for d in items_table])
+
+    if (len(items_df) < 2):
+        # customer does not have enough items to find related customers, write empty
+        print("customer in process_r has not bought any items")
+        return executed
+    
+    # print(items_df)
 
     temp_items_df = items_df.rename(columns={'i_id': 'i2_id'})
     items_df = items_df.rename(columns={'i_id': 'i1_id'})
@@ -379,27 +388,27 @@ def process_r(db, values, output_file):
 
     two_items_df = two_items_df.rename(columns={'w_id': 'w1_id', 'd_id': 'd1_id',
                                                 'c_id': 'c1_id', 'o_id': 'o1_id'})
-    # print(two_items_df)
+    
+    items_columns = ['w_id', 'd_id', 'c_id', 'o_id', 'i_id']
+    customer_items_df = pd.DataFrame(columns=items_columns)
+    get_rcust_stmt = db.prepare("""SELECT w_id, d_id, c_id, o_id, i_id FROM orders_by_warehouse_district_customer WHERE 
+        i_id = ?""")
 
-    # get all orders by customer where i_id is found in the list of items purchased by input customer
-    in_values = ", ".join(["{}".format(item) for item in item_list])
-    # print("in values: " + in_values)
-    # gets order_by_customer rows filtered for item values specified
-    get_rcust_stmt = db.prepare(f"""SELECT w_id, d_id, c_id, o_id, i_id FROM orders_by_warehouse_district_customer WHERE 
-        i_id IN ({in_values}) ALLOW FILTERING""")
-    all_cust_items_table = db.execute(get_rcust_stmt)
-
-    all_cust_items_df = pd.DataFrame(all_cust_items_table)
+    for index, row in items_df.iterrows():
+        item = row['i1_id']
+        res_set = db.execute(get_rcust_stmt, [item])
+        cust_items = pd.DataFrame([d for d in res_set])
+        customer_items_df = pd.concat([customer_items_df, cust_items], ignore_index=True)
+       
+    customer_items_df = customer_items_df.drop_duplicates()
 
     # remove all customers with warehouse id same as original customer
-    all_cust_items_df = all_cust_items_df.loc[all_cust_items_df['w_id'] != w_id]
+    all_cust_items_df = customer_items_df.loc[customer_items_df['w_id'] != w_id]
     temp_all_cust_df = all_cust_items_df.rename(columns={'i_id': 'i2_id'})
     all_cust_df = all_cust_items_df.rename(columns={'i_id': 'i1_id'})
     
     # join 2 items table to get a table with 2 items per row given an order
     all_cust_2_items_df = all_cust_df.merge(temp_all_cust_df, on=['w_id', 'd_id', 'c_id', 'o_id'], how='inner')
-
-    # print(all_cust_2_items_df)
 
     # filter rows with 2 of the same items
     all_cust_2_items_df = all_cust_2_items_df[all_cust_2_items_df['i1_id'] != all_cust_2_items_df['i2_id']]
@@ -409,17 +418,11 @@ def process_r(db, values, output_file):
 
     r_c_i = two_items_df.merge(temp_2_items_df, on=['i1_id', 'i2_id'], how='inner')
 
-    # print(r_c_i)
-
-    # filter rows where customers are the same
-    related_customers = r_c_i[r_c_i['w1_id'] != r_c_i['w2_id']]
-
-    # write customer identifier
-    output_file.write(f"C_W_ID: {w_id}, C_D_ID: {d_id}, C_ID: {c_id}")
+    r_c_i = r_c_i.drop_duplicates(subset=['w2_id', 'd2_id', 'c2_id'])
 
     # write related customer identifiers
-    for index, row in related_customers.iterrows():
-        #print(f"C_W_ID: {row['w2_id']}, C_D_ID: {row['d2_id']}, C_ID: {row['c2_id']}")
+    for index, row in r_c_i.iterrows():
+        print(f"C_W_ID: {row['w2_id']}, C_D_ID: {row['d2_id']}, C_ID: {row['c2_id']}")
         output_file.write(f"C_W_ID: {row['w2_id']}, C_D_ID: {row['d2_id']}, C_ID: {row['c2_id']}")
 
     return executed
@@ -519,6 +522,7 @@ def process_n(db, values, output_file):
         # record for txn 6
         if (quantity > most_popular_order_line_quantity):
             popular_ol_info = [[index+1, i_id, quantity, i_name]]
+            most_popular_order_line_quantity = quantity
         elif(quantity == most_popular_order_line_quantity):
             popular_ol_info.append([index+1, i_id, quantity, i_name])
 
@@ -645,6 +649,7 @@ if __name__ == '__main__':
         print(f"An unexpected error occurred: {type(e).__name__}")
         print(str(e))
     finally:
+        
         elapsed_time = time.time() - start_time  # In seconds
         throughput = total_transactions / elapsed_time  # Transactions per second
 
@@ -653,6 +658,7 @@ if __name__ == '__main__':
         perc_95_latency = statistics.quantiles(latencies, n=100)[94]  # 95th percentile
         perc_99_latency = statistics.quantiles(latencies, n=100)[98]  # 99th percentile
 
+        
         # stderr for each client
         with open(f"{shared_dir}stderr_client{filename}", "w") as f:
             f.write(f"Total number of transactions processed: {total_transactions}\n")
@@ -669,5 +675,6 @@ if __name__ == '__main__':
             if f.tell() == 0:
                 writer.writerow(["client_number", "measurement_a","measurement_b","measurement_c","measurement_d","measurement_e","measurement_f","measurement_g"])
             writer.writerow([client, total_transactions, round(elapsed_time, 2), round(throughput,2), round(avg_latency,2), round(median_latency,2), round(perc_95_latency,2), round(perc_99_latency,2)])
+        
 
 
