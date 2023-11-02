@@ -178,6 +178,8 @@ CREATE TABLE IF NOT EXISTS supplier.undelivered_orders_by_warehouse_district
     PRIMARY KEY ((O_W_ID, O_D_ID), O_ID)
 ) WITH CLUSTERING ORDER BY (O_ID ASC);
 
+ALTER table supplier.undelivered_orders_by_warehouse_district WITH gc_grace_seconds = '0';
+
 CREATE TABLE IF NOT EXISTS supplier.orders_by_warehouse_district_customer
 (
     W_ID        INT,
