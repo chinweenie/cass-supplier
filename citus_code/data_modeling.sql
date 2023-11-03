@@ -1,5 +1,5 @@
 -- create warehouse table 
-CREATE TABLE warehouse (
+CREATE TABLE warehouses (
     w_id INT PRIMARY KEY,
     w_name VARCHAR(10),
     w_street1 VARCHAR(20),
@@ -10,10 +10,10 @@ CREATE TABLE warehouse (
     w_tax DECIMAL(4,4),
     w_ytd DECIMAL(12,2)
 );
-SELECT create_distributed_table('warehouse', 'w_id');
+SELECT create_distributed_table('warehouses', 'w_id');
 
 -- create district table 
-CREATE TABLE district (
+CREATE TABLE districts (
     d_w_id INT,
     d_id INT,
     d_name VARCHAR(10),
@@ -26,13 +26,13 @@ CREATE TABLE district (
     d_ytd DECIMAL(12,2),
     d_next_o_id INT,
     PRIMARY KEY (d_w_id, d_id),
-    FOREIGN KEY (d_w_id) REFERENCES warehouse(w_id)
+    FOREIGN KEY (d_w_id) REFERENCES warehouses(w_id)
 );
-SELECT create_distributed_table('district', 'd_w_id');
+SELECT create_distributed_table('districts', 'd_w_id');
 
 
 -- create customer table and distribute on w_id
-CREATE TABLE customer (
+CREATE TABLE customers (
     c_w_id INT,
     c_d_id INT,
     c_id INT,
@@ -55,10 +55,10 @@ CREATE TABLE customer (
     c_delivery_cnt INT,
     c_data VARCHAR(500),
     PRIMARY KEY (c_w_id, c_d_id, c_id),
-    FOREIGN KEY (c_w_id, c_d_id) REFERENCES district(d_w_id, d_id)
+    FOREIGN KEY (c_w_id, c_d_id) REFERENCES districts(d_w_id, d_id)
 );
 
-SELECT create_distributed_table('customer', 'c_w_id');
+SELECT create_distributed_table('customers', 'c_w_id');
 
 -- create orders table and distribute on w_id
 CREATE TABLE orders (
@@ -71,23 +71,23 @@ CREATE TABLE orders (
     o_all_local DECIMAL(1,0),
     o_entry_d TIMESTAMP,
     PRIMARY KEY (o_w_id, o_d_id, o_id),
-    FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customer(c_w_id, c_d_id, c_id)
+    FOREIGN KEY (o_w_id, o_d_id, o_c_id) REFERENCES customers(c_w_id, c_d_id, c_id)
 );
 
 SELECT create_distributed_table('orders', 'o_w_id');
 
 -- create item table 
-CREATE TABLE item (
+CREATE TABLE items (
     i_id INT PRIMARY KEY,
     i_name VARCHAR(24),
     i_price DECIMAL(5,2),
     i_im_id INT,
     i_data VARCHAR(50)
 );
-SELECT create_reference_table('item');
+SELECT create_reference_table('items');
 
 -- create order line table and distribute on w_id
-CREATE TABLE order_line (
+CREATE TABLE order_lines (
     ol_w_id INT,
     ol_d_id INT,
     ol_o_id INT,
@@ -102,12 +102,12 @@ CREATE TABLE order_line (
     -- FOREIGN KEY (ol_i_id) REFERENCES item(i_id),
     -- FOREIGN KEY (ol_w_id, ol_d_id, ol_o_id) REFERENCES orders(o_w_id, o_d_id, o_id)
 );
-SELECT create_distributed_table('order_line', 'ol_w_id');
-ALTER TABLE order_line ADD FOREIGN KEY(ol_w_id, ol_d_id, ol_o_id) REFERENCES orders(o_w_id, o_d_id, o_id);
-ALTER TABLE order_line ADD FOREIGN KEY(ol_i_id) REFERENCES item(i_id);
+SELECT create_distributed_table('order_lines', 'ol_w_id');
+ALTER TABLE order_lines ADD FOREIGN KEY(ol_w_id, ol_d_id, ol_o_id) REFERENCES orders(o_w_id, o_d_id, o_id);
+ALTER TABLE order_lines ADD FOREIGN KEY(ol_i_id) REFERENCES items(i_id);
 
 -- create stock table 
-CREATE TABLE stock (
+CREATE TABLE stocks (
     s_w_id INT,
     s_i_id INT,
     s_quantity DECIMAL(4,0),
@@ -129,9 +129,9 @@ CREATE TABLE stock (
     -- FOREIGN KEY (s_i_id) REFERENCES item(i_id),
     -- FOREIGN KEY (s_w_id) REFERENCES warehouse(w_id)
 );
-SELECT create_distributed_table('stock', 's_w_id');
-ALTER TABLE stock ADD FOREIGN KEY(s_i_id) REFERENCES item(i_id);
-ALTER TABLE stock ADD FOREIGN KEY (s_w_id) REFERENCES warehouse(w_id); 
+SELECT create_distributed_table('stocks', 's_w_id');
+ALTER TABLE stocks ADD FOREIGN KEY(s_i_id) REFERENCES items(i_id);
+ALTER TABLE stocks ADD FOREIGN KEY (s_w_id) REFERENCES warehouses(w_id); 
 
 -- Create the update_home_order_line function
 CREATE OR REPLACE FUNCTION update_home_order_line()
@@ -178,7 +178,7 @@ SELECT run_command_on_all_nodes(
 SELECT run_command_on_all_nodes(
   $cmd$
     CREATE TRIGGER update_all_local_trigger
-    BEFORE INSERT OR UPDATE ON orders
+    BEFORE INSERT OR UPDATE ON order
     FOR EACH ROW
     EXECUTE FUNCTION update_all_local();
   $cmd$
