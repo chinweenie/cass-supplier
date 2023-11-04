@@ -5,15 +5,12 @@ import statistics
 import sys
 import csv
 
-from cassandra.cluster import Cluster
 from decimal import Decimal
 from cassandra.query import BatchStatement, SimpleStatement, ValueSequence
-from cassandra import ConsistencyLevel
 import pandas as pd
 from cassandra.policies import TokenAwarePolicy, RoundRobinPolicy, DowngradingConsistencyRetryPolicy
 from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster, ExecutionProfile
-
 from datetime import datetime
 
 
@@ -78,19 +75,25 @@ def process_p(db, values, output_file):
     c_id = int(values[3])
     payment = Decimal(values[4])
 
-    user_lookup_statement = SimpleStatement("SELECT * FROM customers WHERE c_w_id = %s AND c_d_id = %s AND c_id = %s")
-    user_res = db.execute(user_lookup_statement, (c_w_id, c_d_id, c_id)).one()
+    # user_lookup_statement = (
+    #     SimpleStatement("SELECT * FROM customers WHERE c_w_id = %s AND c_d_id = %s AND c_id = %s"))
+    user_res = db.execute(customers_statement, (c_w_id, c_d_id, c_id)).one()
+    print(user_res)
     if not user_res:
         output_file.write(f"customer not found")
         return executed
 
-    warehouses = SimpleStatement(f"""SELECT * FROM warehouses WHERE w_id = %s""")
+    # warehouses = SimpleStatement(f"""SELECT * FROM warehouses WHERE w_id = %s""")
+    warehouses = warehouses_statement
+    warehouses.consistency_level = ConsistencyLevel.ONE
     warehouses_res = db.execute(warehouses, (c_w_id,)).one()
     if not warehouses_res:
         output_file.write(f"warehouse not found")
         return executed
 
-    districts = SimpleStatement(f"""SELECT * FROM districts WHERE d_w_id = %s AND d_id = %s""")
+    # districts = SimpleStatement(f"""SELECT * FROM districts WHERE d_w_id = %s AND d_id = %s""")
+    districts = districts_statement
+    districts.consistency_level = ConsistencyLevel.ONE
     districts_res = db.execute(districts, (c_w_id, c_d_id)).one()
     if not districts_res:
         output_file.write(f"district not found")
@@ -99,11 +102,20 @@ def process_p(db, values, output_file):
     old_balance = Decimal(user_res.c_balance)
     new_balance = old_balance - payment
 
-    new_ytd_balance = user_res.c_ytd_payment + float(payment)
+    new_ytd_balance = Decimal(user_res.c_ytd_payment) + payment
     new_payment_cnt = user_res.c_payment_cnt + 1
+
+    new_warehouse_ytd = Decimal(warehouses_res.w_ytd) + payment
+    new_district_ytd = Decimal(districts_res.d_ytd) + payment
 
     try:
         batch = BatchStatement()
+        update_warehouse_statement = db.prepare("UPDATE warehouses SET w_ytd = ? WHERE w_id = ?")
+        batch.add(update_warehouse_statement, (new_warehouse_ytd, c_w_id))
+
+        update_district_statement = db.prepare("UPDATE districts SET d_ytd = ? WHERE d_w_id = ? AND d_id = ?")
+        batch.add(update_district_statement, (new_district_ytd, c_w_id, c_d_id))
+
         update_customer_statement = db.prepare(
             "UPDATE customers SET c_balance = ?, c_ytd_payment = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
         batch.add(update_customer_statement, (new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_d_id, c_id))
@@ -147,6 +159,7 @@ def process_p(db, values, output_file):
 def process_t(db, values, output_file):
     executed = False
     statement = SimpleStatement(f"""SELECT c_name, c_balance, w_name, d_name FROM top_balances LIMIT 10;""")
+    statement.consistency_level = ConsistencyLevel.ONE
     res = db.execute(statement)
     formatted_res = format_res(res)
     output_file.write(formatted_res)
@@ -164,7 +177,7 @@ def process_s(db, values, output_file):
     T = Decimal(values[3])
     L = int(values[4])
 
-    last_order_num_lookup_statement = "SELECT * FROM districts WHERE d_w_id = %s AND d_id = %s"
+    last_order_num_lookup_statement = districts_statement
     district_res = db.execute(last_order_num_lookup_statement, (w_id, d_id)).one()
     last_order_num = district_res.d_next_o_id
 
@@ -197,7 +210,7 @@ def process_i(db, values, output_file):
     d_id = int(values[2])
     L = int(values[3])
 
-    last_order_num_lookup_statement = "SELECT * FROM districts WHERE d_w_id = %s AND d_id = %s"
+    last_order_num_lookup_statement = districts_statement
     N_res = db.execute(last_order_num_lookup_statement, (w_id, d_id)).one()
     N = N_res.d_next_o_id
 
@@ -308,11 +321,11 @@ def process_d(db, values, output_file):
         db.execute_async(update_customer_stmt, [total_order_amount, new_delivery_count, o_w_id, o_d_id, o_c_id])
 
         # Handle top_balances to update c_balance
-        warehouses = SimpleStatement(f"""SELECT * FROM warehouses WHERE w_id=%s""")
-        warehouses_res = db.execute(warehouses, (customer_values.c_w_id,)).one()
-        districts = SimpleStatement(
-            f"""SELECT * FROM districts WHERE d_w_id=%s AND d_id=%s""")
-        districts_res = db.execute(districts, (customer_values.c_w_id, customer_values.c_d_id)).one()
+        # warehouses = SimpleStatement(f"""SELECT * FROM warehouses WHERE w_id=%s""")
+        warehouses_res = db.execute(warehouses_statement, (customer_values.c_w_id,)).one()
+        # districts = SimpleStatement(
+        #     f"""SELECT * FROM districts WHERE d_w_id=%s AND d_id=%s""")
+        districts_res = db.execute(districts_statement, (customer_values.c_w_id, customer_values.c_d_id)).one()
         if not districts_res:
             output_file.write("district not found")
             return executed
@@ -330,7 +343,6 @@ def process_d(db, values, output_file):
             insert_query = db.prepare(
                 "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, dummy_partition_key, c_name, w_name, "
                 "d_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-
             batch.add(insert_query, (
                 Decimal(total_order_amount), customer_values.c_w_id, customer_values.c_id, customer_values.c_d_id,
                 'global',
@@ -442,7 +454,8 @@ def process_n(db, values, output_file):
     ols = values[1:]
 
     # prepare statements here
-    last_order_num_lookup_statement = db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
+    last_order_num_lookup_statement = districts_statement
+        # db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
     last_order_num_lookup_statement.consistency_level = ConsistencyLevel.ALL # make sure having the latest order num
     last_L_order_lookup_statement = db.prepare("UPDATE districts SET d_next_o_id = ? WHERE d_w_id = ? AND d_id = ?")
     create_order_statement = db.prepare("INSERT INTO orders (o_w_id,o_d_id,o_id,o_c_id,o_ol_cnt,o_carrier_id,o_all_local,o_entry_d) \
@@ -528,9 +541,11 @@ def process_n(db, values, output_file):
 
         output.append([i_id, i_name, s_w_id, quantity, item_amount, adjusted_q])
 
-    w_lookup_statement = "SELECT * FROM warehouses WHERE w_id = %s"
+    w_lookup_statement = warehouses_statement
+    # "SELECT * FROM warehouses WHERE w_id = %s"
     w_res_future = db.execute_async(w_lookup_statement, ([w_id]))
-    c_lookup_statement = "SELECT * FROM customers WHERE c_w_id = %s AND c_d_id = %s AND c_id = %s"
+    c_lookup_statement = customers_statement
+        # "SELECT * FROM customers WHERE c_w_id = %s AND c_d_id = %s AND c_id = %s"
     c_res_future = db.execute_async(c_lookup_statement, ([w_id, d_id, c_id]))
 
     # update for txn 3:
@@ -596,7 +611,12 @@ if __name__ == '__main__':
     session.set_keyspace('supplier')
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
     shared_dir = "/home/stuproj/cs4224d/cass_log/"
-    # directory = ''
+
+    districts_statement = session.prepare("""SELECT * FROM districts WHERE 
+            d_w_id = ? AND d_id = ?""")
+    warehouses_statement = session.prepare("""SELECT * FROM warehouses WHERE w_id = ?""")
+    customers_statement = session.prepare("""SELECT * FROM customers WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?""")
+
     total_transactions = 0
     latencies = []  # List to store latency of each transaction
     start_time = time.time()
