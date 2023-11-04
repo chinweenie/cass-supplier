@@ -12,5 +12,5 @@ echo $(logtime) "$NODE: $JAVA_HOME"
 rm -f $CASS_DIR/xact_files/stderr
 rm -f $CASS_DIR/xact_files/stdout
 $cassandra -f > ${HOME}/cass_log/cass-startup-${NODE}.log 2>&1 &
-sleep 3600
+sleep 10800
 

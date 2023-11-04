@@ -85,7 +85,7 @@ def process_p(db, values, output_file):
 
     # warehouses = SimpleStatement(f"""SELECT * FROM warehouses WHERE w_id = %s""")
     warehouses = warehouses_statement
-    warehouses.consistency_level = ConsistencyLevel.ONE
+    # warehouses.consistency_level = ConsistencyLevel.ONE
     warehouses_res = db.execute(warehouses, (c_w_id,)).one()
     if not warehouses_res:
         output_file.write(f"warehouse not found")
@@ -93,7 +93,7 @@ def process_p(db, values, output_file):
 
     # districts = SimpleStatement(f"""SELECT * FROM districts WHERE d_w_id = %s AND d_id = %s""")
     districts = districts_statement
-    districts.consistency_level = ConsistencyLevel.ONE
+    # districts.consistency_level = ConsistencyLevel.ONE
     districts_res = db.execute(districts, (c_w_id, c_d_id)).one()
     if not districts_res:
         output_file.write(f"district not found")
@@ -159,7 +159,7 @@ def process_p(db, values, output_file):
 def process_t(db, values, output_file):
     executed = False
     statement = SimpleStatement(f"""SELECT c_name, c_balance, w_name, d_name FROM top_balances LIMIT 10;""")
-    statement.consistency_level = ConsistencyLevel.ONE
+    # statement.consistency_level = ConsistencyLevel.ONE
     res = db.execute(statement)
     formatted_res = format_res(res)
     output_file.write(formatted_res)
@@ -456,12 +456,12 @@ def process_n(db, values, output_file):
     # prepare statements here
     last_order_num_lookup_statement = districts_statement
         # db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
-    last_order_num_lookup_statement.consistency_level = ConsistencyLevel.ALL # make sure having the latest order num
+    # last_order_num_lookup_statement.consistency_level = ConsistencyLevel.ALL # make sure having the latest order num
     last_L_order_lookup_statement = db.prepare("UPDATE districts SET d_next_o_id = ? WHERE d_w_id = ? AND d_id = ?")
     create_order_statement = db.prepare("INSERT INTO orders (o_w_id,o_d_id,o_id,o_c_id,o_ol_cnt,o_carrier_id,o_all_local,o_entry_d) \
                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
                                             IF NOT EXISTS") # make sure orders are not overwriting
-    create_order_statement.consistency_level = ConsistencyLevel.ALL 
+    # create_order_statement.consistency_level = ConsistencyLevel.ALL
     all_local = 1
     for item in ols:
         if item[1] != w_id :
@@ -603,7 +603,7 @@ if __name__ == '__main__':
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
         consistency_level=ConsistencyLevel.QUORUM,
         retry_policy=DowngradingConsistencyRetryPolicy(),
-        request_timeout=120
+        request_timeout=3000
     )
 
     cluster = Cluster([ip_address])
