@@ -35,7 +35,7 @@ transaction_latency_list = []
 # a bash is required for txt file input 
 for line in sys.stdin:
     loop_count += 1
-    print("read line:", loop_count) 
+    # print("read line:", loop_count) 
     if not line: 
         break
     else: 
@@ -68,6 +68,8 @@ for line in sys.stdin:
 
     # please add your functions below 
 
+    else: 
+        continue
 
     transaction_latency_list.append(latency)
     total_time += latency
