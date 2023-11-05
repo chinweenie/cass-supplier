@@ -18,8 +18,6 @@ DROP TABLE IF EXISTS supplier.popular_item_transaction;
 DROP TYPE IF EXISTS supplier.address;
 DROP TYPE IF EXISTS supplier.name;
 
-DROP INDEX IF EXISTS item_id ON supplier.orders_by_warehouse_district_customer;
-
 CREATE TYPE supplier.name
     (
     FIRST VARCHAR,
