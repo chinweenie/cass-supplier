@@ -1,5 +1,6 @@
 DROP KEYSPACE IF EXISTS supplier;
 CREATE KEYSPACE IF NOT EXISTS supplier WITH REPLICATION = {'class':'SimpleStrategy', 'replication_factor' : 3};
+DROP MATERIALIZED VIEW IF EXISTS supplier.top_balances;
 DROP TABLE IF EXISTS supplier.warehouses;
 DROP TABLE IF EXISTS supplier.districts;
 DROP TABLE IF EXISTS supplier.customers;
@@ -18,7 +19,6 @@ DROP TABLE IF EXISTS supplier.popular_item_transaction;
 DROP TYPE IF EXISTS supplier.address;
 DROP TYPE IF EXISTS supplier.name;
 
-DROP INDEX IF EXISTS item_id ON supplier.orders_by_warehouse_district_customer;
 
 CREATE TYPE supplier.name
     (
@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS supplier.customers
     C_PAYMENT_CNT  INT,
     C_DELIVERY_CNT INT,
     C_DATA         VARCHAR,
+    C_W_NAME         VARCHAR,
+    C_D_NAME         VARCHAR,
     PRIMARY KEY ((C_W_ID, C_D_ID), C_ID)
 );
 
@@ -83,18 +85,27 @@ CREATE TABLE IF NOT EXISTS supplier.customers
 -- Single node partition should be able to handle the workload of payment transaction at 20%
 -- Another option is Materialized view, but this would add overhead for write updates
 -- Can do a benchmark on speed on these two options
-CREATE TABLE IF NOT EXISTS supplier.top_balances
-(
-    C_BALANCE           DECIMAL,
-    C_ID                INT,
-    C_NAME              name,
-    C_W_ID              INT,
-    W_NAME              VARCHAR,
-    D_NAME              VARCHAR,
-    C_D_ID              INT,
-    DUMMY_PARTITION_KEY TEXT,
-    PRIMARY KEY ((DUMMY_PARTITION_KEY), C_BALANCE, C_ID, C_D_ID, C_W_ID)
-) WITH CLUSTERING ORDER BY (C_BALANCE DESC);
+CREATE MATERIALIZED VIEW supplier.top_balances AS
+SELECT C_W_ID, C_D_ID, C_ID, C_BALANCE, C_NAME, C_W_NAME, C_D_NAME
+FROM supplier.customers
+WHERE C_W_ID IS NOT NULL AND C_D_ID IS NOT NULL AND C_ID IS NOT NULL AND C_BALANCE IS NOT NULL
+PRIMARY KEY ((C_W_ID), C_BALANCE, C_D_ID, C_ID)
+WITH CLUSTERING ORDER BY (C_BALANCE DESC, C_D_ID ASC, C_ID ASC);
+
+-- CREATE TABLE IF NOT EXISTS supplier.top_balances
+-- (
+--     C_BALANCE           DECIMAL,
+--     C_ID                INT,
+--     C_NAME              name,
+--     C_W_ID              INT,
+--     W_NAME              VARCHAR,
+--     D_NAME              VARCHAR,
+--     C_D_ID              INT,
+--     DUMMY_PARTITION_KEY TEXT,
+--     PRIMARY KEY ((DUMMY_PARTITION_KEY), C_BALANCE, C_ID, C_D_ID, C_W_ID)
+-- ) WITH CLUSTERING ORDER BY (C_BALANCE DESC)
+-- AND compaction = { 'class' :  'LeveledCompactionStrategy'  }
+-- ;
 
 CREATE TABLE IF NOT EXISTS supplier.orders
 (
