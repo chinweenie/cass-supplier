@@ -438,7 +438,7 @@ def process_r(db, values, output_file):
 
     # write related customer identifiers
     for index, row in r_c_i.iterrows():
-        print(f"C_W_ID: {row['w2_id']}, C_D_ID: {row['d2_id']}, C_ID: {row['c2_id']}")
+        # print(f"C_W_ID: {row['w2_id']}, C_D_ID: {row['d2_id']}, C_ID: {row['c2_id']}")
         output_file.write(f"C_W_ID: {row['w2_id']}, C_D_ID: {row['d2_id']}, C_ID: {row['c2_id']}")
 
     return executed
@@ -613,6 +613,7 @@ if __name__ == '__main__':
     cluster = Cluster([ip_address])
     session = cluster.connect()
     session.set_keyspace('supplier')
+    session.default_timeout = 60
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
     shared_dir = "/home/stuproj/cs4224d/cass_log/"
 
