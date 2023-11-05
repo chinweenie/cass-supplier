@@ -7,16 +7,16 @@ from psycopg2 import sql
 db_params = {
     "dbname": "project",
     "user": "cs4224d",
-    "password": "your_password",
-    "host": "your_host",
+    "password": "mypassword",
+    "host": "localhost",
     "port": "5100"
 }
 
-try:
-    # Establish a database connection
+ # Establish a database connection
     conn = psycopg2.connect(**db_params)
     cursor = conn.cursor()
 
+try:
     # Input: Customer identifiers
     c_w_id = 1  # Replace with the actual values
     c_d_id = 2  # Replace with the actual values
