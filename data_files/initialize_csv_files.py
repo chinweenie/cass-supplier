@@ -4,7 +4,6 @@ import numpy
 import pandas
 
 FILEDIR = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/data_files/"
-# FILEDIR = "~/Desktop/CassandraProj/data_files/"
 
 
 def merge_name(row):
@@ -107,11 +106,17 @@ def process_customer():
                            'c_discount', 'c_balance',
                            'c_ytd_payment', 'c_payment_cnt',
                            'c_delivery_cnt', 'c_data']
+    warehouse_df = pandas.read_csv(FILEDIR + 'warehouse_df.csv').loc[:, ['w_id', 'w_name']]
+    district_df = pandas.read_csv(FILEDIR + 'district_df.csv').loc[:, ['d_w_id','d_id', 'd_name']]
     customer_df['c_address'] = customer_df.apply(merge_cells, axis=1)
     customer_df['c_name'] = customer_df.apply(merge_name, axis=1)
     customer_df = customer_df.drop(['c_first', 'c_middle', 'c_last', 'street_1', 'street_2', 'city', 'state', 'zip'],
                                    axis=1)
-    customer_df.to_csv(FILEDIR + 'customer_df.csv', index=False)
+    merged_df = pandas.merge(customer_df, district_df, left_on=['c_d_id', 'c_w_id'], right_on=['d_id', 'd_w_id'], how='inner')
+    merged_df = pandas.merge(merged_df, warehouse_df, left_on=['c_w_id'], right_on=['w_id'], how='inner')
+    merged_df = merged_df.drop(['w_id','d_id', 'd_w_id'], axis=1)
+    merged_df.rename(columns={'w_name': 'c_w_name', 'd_name': 'c_d_name'}, inplace=True)
+    merged_df.to_csv(FILEDIR + 'customer_df.csv', index=False)
 
 
 def process_top_balances():
@@ -227,7 +232,6 @@ if __name__ == '__main__':
     process_stock()
     process_customer()
     process_orders_by_customer()
-    process_top_balances()
     process_undelivered_orders_by_warehouse_district()
     process_related_customers_txns()
     process_popular_items()

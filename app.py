@@ -57,7 +57,6 @@ def process_o(db, values, output_file):
         return executed
     formatted_res = format_res(
         {"o_id": last_order_id, "o_entry_d": res.o_entry_d, "o_carrier_id": res.o_carrier_id}, order_items_res)
-    # print(formatted_res)
     output_file.write(formatted_res)
 
     executed = True
@@ -75,15 +74,12 @@ def process_p(db, values, output_file):
     c_id = int(values[3])
     payment = Decimal(values[4])
 
-    # user_lookup_statement = (
-    #     SimpleStatement("SELECT * FROM customers WHERE c_w_id = %s AND c_d_id = %s AND c_id = %s"))
     user_res = db.execute(customers_statement, (c_w_id, c_d_id, c_id)).one()
     print(user_res)
     if not user_res:
         output_file.write(f"customer not found")
         return executed
 
-    # warehouses = SimpleStatement(f"""SELECT * FROM warehouses WHERE w_id = %s""")
     warehouses = warehouses_statement
     # warehouses.consistency_level = ConsistencyLevel.ONE
     warehouses_res = db.execute(warehouses, (c_w_id,)).one()
@@ -91,7 +87,6 @@ def process_p(db, values, output_file):
         output_file.write(f"warehouse not found")
         return executed
 
-    # districts = SimpleStatement(f"""SELECT * FROM districts WHERE d_w_id = %s AND d_id = %s""")
     districts = districts_statement
     # districts.consistency_level = ConsistencyLevel.ONE
     districts_res = db.execute(districts, (c_w_id, c_d_id)).one()
@@ -120,16 +115,6 @@ def process_p(db, values, output_file):
             "UPDATE customers SET c_balance = ?, c_ytd_payment = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
         batch.add(update_customer_statement, (new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_d_id, c_id))
 
-        delete_query = db.prepare(
-            "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ? AND dummy_partition_key = 'global'")
-        batch.add(delete_query, (c_w_id, old_balance, c_d_id, c_id))
-
-        insert_query = db.prepare(
-            "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, dummy_partition_key, c_name, w_name, d_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-        batch.add(insert_query, (
-            new_balance, c_w_id, c_id, c_d_id, 'global', user_res.c_name, warehouses_res.w_name,
-            districts_res.d_name))
-
         db.execute(batch)
 
     except Exception as e:
@@ -151,17 +136,23 @@ def process_p(db, values, output_file):
                                 'd_address': districts_res.d_address,
                                 'payment': payment})
     output_file.write(formatted_res)
-
     executed = True
     return executed
 
 
 def process_t(db, values, output_file):
     executed = False
-    statement = SimpleStatement(f"""SELECT c_name, c_balance, w_name, d_name FROM top_balances LIMIT 10;""")
+    warehouses_res = db.execute(SimpleStatement("""SELECT w_id, w_name FROM warehouses;"""))
+    statement = db.prepare(f"""SELECT c_name, c_w_name, c_d_name, c_balance, c_w_id, c_d_id, c_id FROM top_balances WHERE c_w_id = ? LIMIT 10;""")
     # statement.consistency_level = ConsistencyLevel.ONE
-    res = db.execute(statement)
-    formatted_res = format_res(res)
+    customers_list = []
+    for warehouse in warehouses_res:
+        res = db.execute(statement, (warehouse.w_id,))
+        customers_list.extend(res)
+
+    customers_list = sorted(customers_list, key=lambda x: x.c_balance, reverse=True)
+    top_ten = customers_list[:10]
+    formatted_res = format_res(top_ten)
     output_file.write(formatted_res)
     executed = True
     return executed
@@ -279,10 +270,7 @@ def process_d(db, values, output_file):
         order = oldest_undelivered_orders[d_id - 1]
 
         if (order == None):
-            #print(f"warehouse: {w_id} district: {d_id} has no undelivered orders!")
             continue
-
-        #print(f"processing warehouse: {w_id} district: {d_id}")
 
         o_w_id = int(order.o_w_id)
         o_d_id = int(order.o_d_id)
@@ -297,7 +285,6 @@ def process_d(db, values, output_file):
         # get order_lines corresponding to the order
         order_lines = db.execute(get_order_lines_stmt, [o_w_id, o_d_id, o_id])
 
-        # print("w_id: " + str(o_w_id) + " d_id: " + str(o_d_id) + " c_id: " + str(o_c_id))
         # get customer balance and delivery count values from table. searched by unique key so only 1 result
         customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one()
 
@@ -309,7 +296,6 @@ def process_d(db, values, output_file):
         curr_timestamp = datetime.now()
         total_order_amount = Decimal(customer_values.c_balance)
         new_delivery_count = int(customer_values.c_delivery_cnt) + 1
-        customer_old_balance = Decimal(customer_values.c_balance)
         for ol in order_lines:
             ol_number = ol.ol_number
 
@@ -322,37 +308,6 @@ def process_d(db, values, output_file):
         # update customer tables with total amounts and delivery count
         db.execute_async(update_customer_stmt, [total_order_amount, new_delivery_count, o_w_id, o_d_id, o_c_id])
 
-        # Handle top_balances to update c_balance
-        # warehouses = SimpleStatement(f"""SELECT * FROM warehouses WHERE w_id=%s""")
-        warehouses_res = db.execute(warehouses_statement, (customer_values.c_w_id,)).one()
-        # districts = SimpleStatement(
-        #     f"""SELECT * FROM districts WHERE d_w_id=%s AND d_id=%s""")
-        districts_res = db.execute(districts_statement, (customer_values.c_w_id, customer_values.c_d_id)).one()
-        if not districts_res:
-            output_file.write("district not found")
-            return executed
-        if not warehouses_res:
-            output_file.write("warehouse not found")
-            return executed
-
-        if customer_old_balance != Decimal(total_order_amount):
-            batch = BatchStatement()
-            delete_query = db.prepare(
-                "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ? AND "
-                "dummy_partition_key = 'global'")
-            # delete_query.consistency_level = ConsistencyLevel.ALL
-            batch.add(delete_query,
-                      (customer_values.c_w_id, customer_old_balance, customer_values.c_d_id, customer_values.c_id))
-            insert_query = db.prepare(
-                "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, dummy_partition_key, c_name, w_name, "
-                "d_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-            # insert_query.consistency_level = ConsistencyLevel.ALL
-            batch.add(insert_query, (
-                Decimal(total_order_amount), customer_values.c_w_id, customer_values.c_id, customer_values.c_d_id,
-                'global',
-                customer_values.c_name, warehouses_res.w_name,
-                districts_res.d_name))
-            db.execute(batch)
 
     delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
             WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
@@ -637,7 +592,7 @@ if __name__ == '__main__':
                     txn_keys = line.strip().split(',')
                     is_successfully_executed = False
                     if txn_keys[0].lower() == 'n' or txn_keys[0].isnumeric():
-                        # handle m more lines 
+                        # handle m more lines
                         if txn_keys[0].lower() == 'n':
                             m = int(txn_keys[4])
                             txn_inputs = [txn_keys]
@@ -674,7 +629,6 @@ if __name__ == '__main__':
         print(f"An unexpected error occurred: {type(e).__name__}")
         print(str(e))
     finally:
-        
         elapsed_time = time.time() - start_time  # In seconds
         throughput = total_transactions / elapsed_time  # Transactions per second
 
