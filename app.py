@@ -258,17 +258,19 @@ def process_d(db, values, output_file):
 
 
     update_carrier_stmt = db.prepare("UPDATE orders SET o_carrier_id = ? WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?")
+    # update_carrier_stmt.consistency_level = ConsistencyLevel.ALL
     update_orders_by_customer_stt = db.prepare("UPDATE orders_by_customer SET o_carrier_id = ? WHERE c_w_id = ? AND "
                                                "c_d_id = ? AND c_id = ? AND o_id = ? ")
-
+    # update_orders_by_customer_stt.consistency_level = ConsistencyLevel.ALL
     get_order_lines_stmt = db.prepare("SELECT * FROM order_lines WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ?")
     update_order_lines_stmt = db.prepare("""UPDATE order_lines SET ol_delivery_d = ? WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? 
             AND ol_number = ?""")
+    # update_order_lines_stmt.consistency_level = ConsistencyLevel.ALL
     get_customer_row_values = db.prepare(
         "SELECT c_balance, c_delivery_cnt, c_w_id, c_d_id, c_id, c_name FROM customers WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
     update_customer_stmt = db.prepare(
         "UPDATE customers SET c_balance = ?, c_delivery_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
-
+    # update_customer_stmt.consistency_level = ConsistencyLevel.ALL
     # update carrier_id in orders for each delivered order
     # update all order lines for the order to current date and time
     # update customer balance by total price of the orders
@@ -338,11 +340,13 @@ def process_d(db, values, output_file):
             delete_query = db.prepare(
                 "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ? AND "
                 "dummy_partition_key = 'global'")
+            # delete_query.consistency_level = ConsistencyLevel.ALL
             batch.add(delete_query,
                       (customer_values.c_w_id, customer_old_balance, customer_values.c_d_id, customer_values.c_id))
             insert_query = db.prepare(
                 "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, dummy_partition_key, c_name, w_name, "
                 "d_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+            # insert_query.consistency_level = ConsistencyLevel.ALL
             batch.add(insert_query, (
                 Decimal(total_order_amount), customer_values.c_w_id, customer_values.c_id, customer_values.c_d_id,
                 'global',
@@ -352,7 +356,7 @@ def process_d(db, values, output_file):
 
     delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
             WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
-
+    # delete_order_stmt.consistency_level = ConsistencyLevel.ALL
     # delete delivered orders from undelivered orders table
     for order in oldest_undelivered_orders:
         if (order == None):
@@ -601,7 +605,7 @@ if __name__ == '__main__':
 
     cluster_profile = ExecutionProfile(
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
-        consistency_level=ConsistencyLevel.QUORUM,
+        consistency_level=ConsistencyLevel.ONE,
         retry_policy=DowngradingConsistencyRetryPolicy(),
         request_timeout=3000
     )
