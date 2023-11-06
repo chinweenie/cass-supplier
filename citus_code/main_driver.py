@@ -104,7 +104,7 @@ for line in sys.stdin:
         latency = stock_level(host, database, port, user, password, w_id, d_id, stock_threshold, last_orders_to_examine)
     
     # execute popular_item transaction
-     elif transaction_type == 'I':
+    elif transaction_type == 'I':
         w_id, d_id, last_orders_to_examine = transaction_message[1], transaction_message[2], transaction_message[3]
         latency = popular_item(host, database, port, user, password, w_id, d_id, last_orders_to_examine)
     
