@@ -9,8 +9,8 @@ def top_balance(host, database, user, password):
         # Establish connection to the database
         conn = psycopg2.connect(host=host, database=database, user=user, password=password)
         cur = conn.cursor()
-        print('connection success to:')
-        print(f'host: {host}  database:{database}  user:{user}')
+        # print('connection success to:')
+        # print(f'host: {host}  database:{database}  user:{user}')
 
         # # Begin the transaction
         # conn.autocommit = False
@@ -22,9 +22,9 @@ def top_balance(host, database, user, password):
         # find top-10 customers ranked in descending balance order
         top_customer_query = sql.SQL("""
             select c_first, c_middle, c_last, c_balance, w_name, d_name 
-            from customer
-            left join warehouse on c_w_id = w_id 
-            left join district on c_w_id = d_w_id and c_d_id = d_id 
+            from customers
+            left join warehouses on c_w_id = w_id 
+            left join districts on c_w_id = d_w_id and c_d_id = d_id 
             order by c_balance desc 
             limit 10 
         """)
@@ -65,5 +65,5 @@ def top_balance(host, database, user, password):
         latency = (end_time - start_time) * 1000
         return latency
     
-# Example usage
-top_balance(host="localhost", database="project", user="cs4224d", password="1234")
+# # Example usage
+# top_balance(host="localhost", database="project", user="cs4224d", password="1234")
