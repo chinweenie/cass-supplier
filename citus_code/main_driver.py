@@ -74,7 +74,7 @@ for line in sys.stdin:
 
     # execute new_order transaction
     elif transaction_type == 'N':
-        c_id, w_id, d_id, num_items = transaction_message[1], transaction_message[2], transaction_message[3], transaction_message[4]
+        c_id, w_id, d_id, num_items = transaction_message[1], transaction_message[2], transaction_message[3], int(transaction_message[4])
         # Create lists to store order item details
         item_numbers = []
         supplier_warehouses = []
@@ -85,7 +85,7 @@ for line in sys.stdin:
             item_line = sys.stdin.readline().strip().split(',')
             item_numbers.append(item_line[0])
             supplier_warehouses.append(item_line[1])
-            quantities.append(item_line[2])
+            quantities.append(int(item_line[2]))
 
         # Create a tuple with order item details
         c_order = (item_numbers, supplier_warehouses, quantities)
@@ -95,17 +95,17 @@ for line in sys.stdin:
 
     # execute payment transaction
     elif transaction_type == 'P':
-        c_w_id, c_d_id, c_id, payment_amount = transaction_message[1], transaction_message[2], transaction_message[3], transaction_message[4]
+        c_w_id, c_d_id, c_id, payment_amount = transaction_message[1], transaction_message[2], transaction_message[3], float(transaction_message[4])
         latency = payment(host, database, port, user, password, c_w_id, c_d_id, c_id, payment_amount)
 
     # execute stock_level transaction
     elif transaction_type == 'S':
-        w_id, d_id, stock_threshold, last_orders_to_examine = transaction_message[1], transaction_message[2], transaction_message[3], transaction_message[4]
+        w_id, d_id, stock_threshold, last_orders_to_examine = transaction_message[1], transaction_message[2], int(transaction_message[3]), int(transaction_message[4])
         latency = stock_level(host, database, port, user, password, w_id, d_id, stock_threshold, last_orders_to_examine)
     
     # execute popular_item transaction
     elif transaction_type == 'I':
-        w_id, d_id, last_orders_to_examine = transaction_message[1], transaction_message[2], transaction_message[3]
+        w_id, d_id, last_orders_to_examine = transaction_message[1], transaction_message[2], int(transaction_message[3])
         latency = popular_item(host, database, port, user, password, w_id, d_id, last_orders_to_examine)
     
     else: 
