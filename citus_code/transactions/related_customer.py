@@ -9,8 +9,8 @@ def related_customer(host, database, user, password, c_w_id, c_d_id, c_id):
         # Establish connection to the database
         conn = psycopg2.connect(host=host, database=database, user=user, password=password)
         cur = conn.cursor()
-        print('connection success to:')
-        print(f'host: {host}  database:{database}  user:{user}')
+        # print('connection success to:')
+        # print(f'host: {host}  database:{database}  user:{user}')
 
         # # Begin transaction
         # conn.autocommit = False
@@ -29,7 +29,7 @@ def related_customer(host, database, user, password, c_w_id, c_d_id, c_id):
         # step1: Select candidate customer from customer table
         candidate_customer_query = sql.SQL("""
             select c_w_id, c_d_id, c_id
-            from customer
+            from customers
             where c_w_id != %s
         """).format(sql.Literal(c_w_id))
         cur.execute(candidate_customer_query, (c_w_id,))
@@ -38,7 +38,7 @@ def related_customer(host, database, user, password, c_w_id, c_d_id, c_id):
         # step2: Select all orders for given customer
         orders_query = sql.SQL("""
             select o_id 
-            from order 
+            from orders 
             where o_w_id = %s and o_d_id = %s and o_c_id = %s 
         """).format(sql.Literal(c_w_id), sql.Literal(c_d_id), sql.Literal(c_id))
         cur.execute(orders_query, (c_w_id, c_d_id, c_id))
@@ -53,7 +53,7 @@ def related_customer(host, database, user, password, c_w_id, c_d_id, c_id):
                 # actually ol_number is not needed, use set to store unique item id
                 order_line_items_query = sql.SQL("""
                     select ol_i_id
-                    from order_line
+                    from order_lines
                     where ol_w_id = %s and ol_d_id=%s and ol_o_id=%s
                 """).format(sql.Literal(c_w_id), sql.Literal(c_d_id), sql.Literal(o_id))
                 cur.execute(order_line_items_query, (c_w_id, c_d_id, order_id))
@@ -69,11 +69,11 @@ def related_customer(host, database, user, password, c_w_id, c_d_id, c_id):
                 flag = 0 
                 related = 0 
                 # build temp hashmap for reflection
-                print("search for candidate:", (customer_w_id, customer_d_id, customer_id)) 
+                # print("search for candidate:", (customer_w_id, customer_d_id, customer_id)) 
                 cur.execute(orders_query, (customer_w_id, customer_d_id, customer_id))
                 this_orders = cur.fetchall()
                 for this_order_id in this_orders:
-                    print("search for order:", this_order_id)
+                    # print("search for order:", this_order_id)
                     if related: 
                         flag = 1 
                         break 
@@ -118,5 +118,5 @@ def related_customer(host, database, user, password, c_w_id, c_d_id, c_id):
         latency = (end_time - start_time) * 1000
         return latency
 
-# Example usage
-related_customer(host="localhost", database="project", user="cs4224d", password="1234", c_w_id=1, c_d_id=1, c_id=1)
+# # Example usage
+# related_customer(host="localhost", database="project", user="cs4224d", password="1234", c_w_id=1, c_d_id=1, c_id=1)
