@@ -4,6 +4,7 @@ import time
 
 def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
     conn = None
+    cur = None
     start_time = time.time()
     try:
         # Establish connection to the database

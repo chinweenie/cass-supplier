@@ -1,6 +1,7 @@
 import csv 
 import sys
 import numpy as np 
+import os
 
 # define csv name and set check for file header
 csv_name = "./result/clients.csv"

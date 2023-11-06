@@ -4,6 +4,7 @@ import time
 
 def top_balance(host, database, user, password):
     conn = None
+    cur = None
     start_time = time.time()
     try:
         # Establish connection to the database
