@@ -133,53 +133,53 @@ SELECT create_distributed_table('stocks', 's_w_id');
 ALTER TABLE stocks ADD FOREIGN KEY(s_i_id) REFERENCES items(i_id);
 ALTER TABLE stocks ADD FOREIGN KEY (s_w_id) REFERENCES warehouses(w_id); 
 
--- Create the update_home_order_line function
-CREATE OR REPLACE FUNCTION update_home_order_line()
-RETURNS TRIGGER LANGUAGE plpgsql AS $fn$
-BEGIN
-  IF NEW.ol_supply_w_id = NEW.ol_w_id THEN
-    NEW.is_home_order_line = TRUE;
-  ELSE
-    NEW.is_home_order_line = FALSE;
-  END IF;
-  RETURN NEW;
-END;
-$fn$;
+-- -- Create the update_home_order_line function
+-- CREATE OR REPLACE FUNCTION update_home_order_line()
+-- RETURNS TRIGGER LANGUAGE plpgsql AS $fn$
+-- BEGIN
+--   IF NEW.ol_supply_w_id = NEW.ol_w_id THEN
+--     NEW.is_home_order_line = TRUE;
+--   ELSE
+--     NEW.is_home_order_line = FALSE;
+--   END IF;
+--   RETURN NEW;
+-- END;
+-- $fn$;
 
--- -- Distribute the function by ol_w_id
--- SELECT create_distributed_function('update_home_order_line', 'ol_w_id');
+-- -- -- Distribute the function by ol_w_id
+-- -- SELECT create_distributed_function('update_home_order_line', 'ol_w_id');
 
--- Create the update_all_local function
-CREATE OR REPLACE FUNCTION update_all_local()
-RETURNS TRIGGER LANGUAGE plpgsql AS $fn$
-BEGIN
-  IF (SELECT COUNT(*) FROM order_line WHERE ol_w_id = NEW.o_w_id AND ol_d_id = NEW.o_d_id AND ol_o_id = NEW.o_id AND is_home_order_line = FALSE) = 0 THEN
-    NEW.o_all_local = TRUE;
-  ELSE
-    NEW.o_all_local = FALSE;
-  END IF;
-  RETURN NEW;
-END;
-$fn$;
+-- -- Create the update_all_local function
+-- CREATE OR REPLACE FUNCTION update_all_local()
+-- RETURNS TRIGGER LANGUAGE plpgsql AS $fn$
+-- BEGIN
+--   IF (SELECT COUNT(*) FROM order_line WHERE ol_w_id = NEW.o_w_id AND ol_d_id = NEW.o_d_id AND ol_o_id = NEW.o_id AND is_home_order_line = FALSE) = 0 THEN
+--     NEW.o_all_local = TRUE;
+--   ELSE
+--     NEW.o_all_local = FALSE;
+--   END IF;
+--   RETURN NEW;
+-- END;
+-- $fn$;
 
--- -- Distribute the function by o_w_id
--- SELECT create_distributed_function('update_all_local', 'o_w_id');
+-- -- -- Distribute the function by o_w_id
+-- -- SELECT create_distributed_function('update_all_local', 'o_w_id');
 
-SELECT run_command_on_all_nodes(
-  $cmd$
-    CREATE TRIGGER update_home_order_line_trigger
-    BEFORE INSERT OR UPDATE ON order_line
-    FOR EACH ROW
-    EXECUTE FUNCTION update_home_order_line();
-  $cmd$
-);
+-- SELECT run_command_on_all_nodes(
+--   $cmd$
+--     CREATE TRIGGER update_home_order_line_trigger
+--     BEFORE INSERT OR UPDATE ON order_line
+--     FOR EACH ROW
+--     EXECUTE FUNCTION update_home_order_line();
+--   $cmd$
+-- );
 
 
-SELECT run_command_on_all_nodes(
-  $cmd$
-    CREATE TRIGGER update_all_local_trigger
-    BEFORE INSERT OR UPDATE ON order
-    FOR EACH ROW
-    EXECUTE FUNCTION update_all_local();
-  $cmd$
-);
+-- SELECT run_command_on_all_nodes(
+--   $cmd$
+--     CREATE TRIGGER update_all_local_trigger
+--     BEFORE INSERT OR UPDATE ON order
+--     FOR EACH ROW
+--     EXECUTE FUNCTION update_all_local();
+--   $cmd$
+-- );
