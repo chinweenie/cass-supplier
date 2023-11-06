@@ -4,6 +4,7 @@ import time
 
 def deliver(host, database, user, password, warehouse_id, carrier_id):
     conn = None
+    cur = None
     start_time = time.time()
     try:
         # Establish connection to the database
