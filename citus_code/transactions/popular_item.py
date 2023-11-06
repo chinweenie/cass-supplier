@@ -2,7 +2,7 @@ import psycopg2
 from psycopg2 import sql
 import time
 
-def popular_items(host, database, port, user, password, w_id, d_id, last_orders_to_examine):
+def popular_item(host, database, port, user, password, w_id, d_id, last_orders_to_examine):
 
     # Database connection parameters
     db_params = {
