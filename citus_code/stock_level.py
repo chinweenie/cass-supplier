@@ -7,7 +7,7 @@ from psycopg2 import sql
 db_params = {
     "dbname": "project",
     "user": "cs4224d",
-    "password": "mypassword",
+    "password": "1234",
     "host": "localhost",
     "port": "5100"
 }
@@ -23,10 +23,10 @@ try:
     stock_threshold = 100  # Replace with the actual threshold value
     last_orders_to_examine = 5  # Replace with the actual number of orders to examine (L)
 
-    # Step 1: Get the next available order number (N) for the district (W ID, D ID)
+    # Step 1: Get the next available order number (N) for the districts (W ID, D ID)
     cursor.execute(sql.SQL("""
         SELECT d_next_o_id
-        FROM district
+        FROM districts
         WHERE d_w_id = %s AND d_id = %s
     """), (w_id, d_id))
     next_order_number = cursor.fetchone()
@@ -36,10 +36,10 @@ try:
     else:
         next_order_number = next_order_number[0]
 
-        # Step 2: Get the set of items (S) from the last L orders for district (W ID, D ID)
+        # Step 2: Get the set of items (S) from the last L orders for districts (W ID, D ID)
         cursor.execute(sql.SQL("""
             SELECT ol_i_id
-            FROM order_line
+            FROM order_lines
             WHERE ol_w_id = %s AND ol_d_id = %s AND ol_o_id >= %s AND ol_o_id < %s
         """), (w_id, d_id, next_order_number - last_orders_to_examine, next_order_number))
 
@@ -50,7 +50,7 @@ try:
             ol_i_id = row[0]
             cursor.execute(sql.SQL("""
                 SELECT s_quantity
-                FROM stock
+                FROM stocks
                 WHERE s_w_id = %s AND s_i_id = %s
             """), (w_id, ol_i_id))
 
@@ -59,7 +59,7 @@ try:
                 items_below_threshold += 1
 
         # Output the total number of items in S below the threshold
-        print(f"Total number of items with stock quantity below {stock_threshold}: {items_below_threshold}")
+        print(f"Total number of items with stocks quantity below {stock_threshold}: {items_below_threshold}")
 
 except Exception as e:
     print(f"Error: {str(e)}")

@@ -5,7 +5,7 @@ from psycopg2 import sql
 db_params = {
     "dbname": "project",
     "user": "cs4224d",
-    "password": "mypassword",
+    "password": "1234",
     "host": "localhost",
     "port": "5100"
 }
@@ -20,10 +20,10 @@ try:
     d_id = 2  # Replace with the actual values
     last_orders_to_examine = 5  # Replace with the actual number of orders to examine (L)
 
-    # Step 1: Get the next available order number (N) for the district (W ID, D ID)
+    # Step 1: Get the next available order number (N) for the districts (W ID, D ID)
     cursor.execute(sql.SQL("""
         SELECT d_next_o_id
-        FROM district
+        FROM districts
         WHERE d_w_id = %s AND d_id = %s
     """), (w_id, d_id))
     next_order_number = cursor.fetchone()
@@ -33,11 +33,11 @@ try:
     else:
         next_order_number = next_order_number[0]
 
-        # Step 2: Get the set of last L orders (S) for district (W ID, D ID)
+        # Step 2: Get the set of last L orders (S) for districts (W ID, D ID)
         cursor.execute(sql.SQL("""
             SELECT o_id, o_entry_d, c_first, c_middle, c_last
             FROM orders
-            JOIN customer ON o_w_id = c_w_id AND o_d_id = c_d_id AND o_c_id = c_id
+            JOIN customers ON o_w_id = c_w_id AND o_d_id = c_d_id AND o_c_id = c_id
             WHERE o_w_id = %s AND o_d_id = %s AND o_id >= %s AND o_id < %s
         """), (w_id, d_id, next_order_number - last_orders_to_examine, next_order_number))
 
@@ -51,8 +51,8 @@ try:
             order_id, entry_d, c_first, c_middle, c_last = order
             cursor.execute(sql.SQL("""
                 SELECT ol.ol_i_id, i.i_name, ol.ol_quantity
-                FROM order_line ol
-                JOIN item i ON ol.ol_i_id = i.i_id
+                FROM order_lines ol
+                JOIN items i ON ol.ol_i_id = i.i_id
                 WHERE ol.ol_w_id = %s AND ol.ol_d_id = %s AND ol.ol_o_id = %s
             """), (w_id, d_id, order_id))
 
@@ -84,7 +84,7 @@ try:
 
                 cursor.execute(sql.SQL("""
                     SELECT ol_quantity
-                    FROM order_line
+                    FROM order_lines
                     WHERE ol_w_id = %s AND ol_d_id = %s AND ol_o_id = %s AND ol_i_id = %s
                 """), (w_id, d_id, order_id, item_id))
 
