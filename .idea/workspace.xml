@@ -6,8 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="9307a6a5-d964-415f-a51b-72625b7f589c" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cassandra/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cassandra/drivers/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/drivers/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cassandra/setup_scripts/.bashrc" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/.bashrc" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cassandra/setup_scripts/batch_start1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/batch_start1.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cassandra/setup_scripts/install_cass.sh" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/install_cass.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cassandra/setup_scripts/paste_file.sh" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/paste_file.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,6 +21,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Python Script" />
+        <option value="BashSupport Pro Bash" />
       </list>
     </option>
   </component>
@@ -67,11 +71,11 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Cassandra/cass_stats/quorum" />
       <recent name="$PROJECT_DIR$/Cassandra/setup_scripts" />
       <recent name="$PROJECT_DIR$/Cassandra/result_csv" />
       <recent name="$PROJECT_DIR$/Cassandra/drivers" />
       <recent name="$PROJECT_DIR$/Cassandra/data_files" />
-      <recent name="$PROJECT_DIR$/Cassandra" />
     </key>
   </component>
   <component name="RunManager" selected="Python.initialize_csv_files (1)">
@@ -179,7 +183,10 @@
       <workItem from="1698924553486" duration="12469000" />
       <workItem from="1699201835052" duration="795000" />
       <workItem from="1699234599149" duration="44713000" />
-      <workItem from="1699318722833" duration="14448000" />
+      <workItem from="1699318722833" duration="14556000" />
+      <workItem from="1699343113789" duration="77000" />
+      <workItem from="1699343198528" duration="34000" />
+      <workItem from="1699343240470" duration="4460000" />
     </task>
     <servers />
   </component>

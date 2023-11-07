@@ -11,18 +11,18 @@ fi
 
 if [ ! -d "$dir" ]; then
  mkdir "$dir"
- cp ~/apache-cassandra-4.1.3-bin.tar.gz /temp/teamd-cass/
+ cp ~/cass_data_files/apache-cassandra-4.1.3-bin.tar.gz /temp/teamd-cass/
  tar -xvzf /temp/teamd-cass/apache-cassandra-4.1.3-bin.tar.gz -C /temp/teamd-cass/
  cd $CASS_DIR
  mkdir data_files
  mkdir xact_files
- cp -r ~/project_files/data_files $CASS_DIR/
- cp -r ~/project_files/xact_files $CASS_DIR/
- cp ~/app.py $CASS_DIR/xact_files/
- cp ~/calculate_result.py $CASS_DIR/xact_files/
- cp ~/initialize_csv_files.py $CASS_DIR/data_files/
- cp ~/load_data.cql $CASS_DIR/data_files/
- cp ~/startup.cql $CASS_DIR/data_files/
+ cp -r ~/cass_data_files/data_files $CASS_DIR/
+ cp -r ~/cass_data_files/xact_files $CASS_DIR/
+ cp ~/cass_data_files/app.py $CASS_DIR/xact_files/
+ cp ~/cass_data_files/calculate_result.py $CASS_DIR/xact_files/
+ cp ~/cass_data_files/initialize_csv_files.py $CASS_DIR/data_files/
+ cp ~/cass_data_files/load_data.cql $CASS_DIR/data_files/
+ cp ~/cass_data_files/startup.cql $CASS_DIR/data_files/
  pip install pytz
  python $CASS_DIR/data_files/initialize_csv_files.py
 fi

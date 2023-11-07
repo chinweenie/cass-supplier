@@ -15,6 +15,7 @@ logtime() {
 }
 
 source ${HOME}/.bashrc
+CASSD=${HOME}/cass_data_files/
 echo $@
 action="$1"
 shift
@@ -39,26 +40,26 @@ node3="${nodes_list[2]}"
 node4="${nodes_list[3]}"
 node5="${nodes_list[4]}"
 
-chmod +x  ${HOME}/install_cass.sh
-chmod +x  ${HOME}/start_cass.sh
+chmod +x  ${CASSD}/install_cass.sh
+chmod +x  ${CASSD}/start_cass.sh
 
 if [ "$action" = "init" ]; then
   echo "Installing Cassandra and setting up configuration yaml in each node"
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node1}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node2}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node3}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node4}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node5}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node1}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node2}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node3}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node4}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node5}.log 2>&1 &
   sleep 100
 fi
 
 if [ "$action" = "init" ] || [ "$action" = "run" ] || [ "$action" = "calculate" ]; then
   echo "Starting Cassandra on every node"
-  srun --nodes=3 --ntasks=3 --cpus-per-task=12 --nodelist=$node1,$node2,$node3 ${HOME}/start_cass.sh &
+  srun --nodes=3 --ntasks=3 --cpus-per-task=12 --nodelist=$node1,$node2,$node3 ${CASSD}/start_cass.sh &
   sleep 120
-  srun --nodes=1 --ntasks=1 --cpus-per-task=12 --nodelist=$node4 ${HOME}/start_cass.sh &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=12 --nodelist=$node4 ${CASSD}/start_cass.sh &
   sleep 120
-  srun --nodes=1 --ntasks=1 --cpus-per-task=12 --nodelist=$node5 ${HOME}/start_cass.sh &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=12 --nodelist=$node5 ${CASSD}/start_cass.sh &
   sleep 120
 fi
 

@@ -2,7 +2,7 @@
 remote_user="cs4224d"
 remote_password="Test@123"
 remote_host="xlog0.comp.nus.edu.sg"
-local_dir="/Users/chinweenie/Desktop/CassandraProj/cass_stats"
+local_dir="/Users/chinweenie/Desktop/CassandraProj/Cassandra/cass_stats"
 remote_dir="/home/stuproj/cs4224d/cass_log.zip"
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")

@@ -560,7 +560,7 @@ if __name__ == '__main__':
 
     cluster_profile = ExecutionProfile(
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
-        consistency_level=ConsistencyLevel.QUORUM,
+        consistency_level=ConsistencyLevel.ONE,
         retry_policy=DowngradingConsistencyRetryPolicy(),
         request_timeout=3000
     )
