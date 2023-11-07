@@ -85,12 +85,27 @@ CREATE TABLE IF NOT EXISTS supplier.customers
 -- Single node partition should be able to handle the workload of payment transaction at 20%
 -- Another option is Materialized view, but this would add overhead for write updates
 -- Can do a benchmark on speed on these two options
-CREATE MATERIALIZED VIEW supplier.top_balances AS
-SELECT C_W_ID, C_D_ID, C_ID, C_BALANCE, C_NAME, C_W_NAME, C_D_NAME
-FROM supplier.customers
-WHERE C_W_ID IS NOT NULL AND C_D_ID IS NOT NULL AND C_ID IS NOT NULL AND C_BALANCE IS NOT NULL
-PRIMARY KEY ((C_W_ID), C_BALANCE, C_D_ID, C_ID)
-WITH CLUSTERING ORDER BY (C_BALANCE DESC, C_D_ID ASC, C_ID ASC);
+-- CREATE MATERIALIZED VIEW supplier.top_balances AS
+-- SELECT C_W_ID, C_D_ID, C_ID, C_BALANCE, C_NAME, C_W_NAME, C_D_NAME
+-- FROM supplier.customers
+-- WHERE C_W_ID IS NOT NULL AND C_D_ID IS NOT NULL AND C_ID IS NOT NULL AND C_BALANCE IS NOT NULL
+-- PRIMARY KEY ((C_W_ID), C_BALANCE, C_D_ID, C_ID)
+-- WITH CLUSTERING ORDER BY (C_BALANCE DESC, C_D_ID ASC, C_ID ASC);
+
+-- CREATE TABLE IF NOT EXISTS supplier.top_balances
+-- (
+--     C_BALANCE           DECIMAL,
+--     C_ID                INT,
+--     C_NAME              name,
+--     C_W_ID              INT,
+--     W_NAME              VARCHAR,
+--     D_NAME              VARCHAR,
+--     C_D_ID              INT,
+--     DUMMY_PARTITION_KEY TEXT,
+--     PRIMARY KEY ((C_W_ID), C_BALANCE, C_D_ID, C_ID)
+-- ) WITH CLUSTERING ORDER BY (C_BALANCE DESC, C_D_ID ASC, C_ID ASC)
+-- AND compaction = { 'class' :  'LeveledCompactionStrategy'  }
+-- ;
 
 -- CREATE TABLE IF NOT EXISTS supplier.top_balances
 -- (

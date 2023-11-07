@@ -11,6 +11,7 @@ fi
 
 if [ ! -d "$dir" ]; then
  mkdir "$dir"
+ mkdir "$dir/client"
  cp ~/cass_data_files/apache-cassandra-4.1.3-bin.tar.gz /temp/teamd-cass/
  tar -xvzf /temp/teamd-cass/apache-cassandra-4.1.3-bin.tar.gz -C /temp/teamd-cass/
  cd $CASS_DIR
