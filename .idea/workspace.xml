@@ -6,10 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="9307a6a5-d964-415f-a51b-72625b7f589c" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cassandra/drivers/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/drivers/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cassandra/setup_scripts/.bashrc" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/.bashrc" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cassandra/setup_scripts/batch_start1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/batch_start1.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cassandra/setup_scripts/install_cass.sh" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/install_cass.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -185,7 +182,7 @@
       <workItem from="1699318722833" duration="14556000" />
       <workItem from="1699343113789" duration="77000" />
       <workItem from="1699343198528" duration="34000" />
-      <workItem from="1699343240470" duration="9953000" />
+      <workItem from="1699343240470" duration="12431000" />
     </task>
     <servers />
   </component>

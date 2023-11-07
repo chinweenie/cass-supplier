@@ -66,9 +66,10 @@ fi
 
 if [ "$action" = "run" ]; then
   echo "Creating tables and keyspace in $node1 using ${ip_address[0]}"
+#  rm -rf $client_dir && mkdir -p $client_dir &&
   srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "python $CASS_DIR/cqlsh.py ${ip_address[0]} < $CASS_DIR/data_files/startup.cql" > ${HOME}/cass_log/create-schema.log 2>&1 &
   echo "Completed create tables and keyspace"
-  sleep 300
+  sleep 120
 
   echo "Loading data in $node2 using ${ip_address[1]}"
   srun --nodes=1 --ntasks=1 --cpus-per-task=4 --nodelist=$node2 bash -c "python $CASS_DIR/cqlsh.py ${ip_address[1]} < $CASS_DIR/data_files/load_data.cql" > ${HOME}/cass_log/load-data.log 2>&1 &
@@ -80,30 +81,30 @@ if [ "$action" = "run" ]; then
   shuffled_array=($(for i in "${array[@]}"; do echo "$i"; done | shuf))
   driver_dir="$CASS_DIR/xact_files/app.py"
 
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[0]} ${shuffled_array[0]}" > ${HOME}/cass_log/client-${node1}-${shuffled_array[0]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[0]} ${shuffled_array[1]}" > ${HOME}/cass_log/client-${node1}-${shuffled_array[1]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[0]} ${shuffled_array[2]}" > ${HOME}/cass_log/client-${node1}-${shuffled_array[2]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[0]} ${shuffled_array[3]}" > ${HOME}/cass_log/client-${node1}-${shuffled_array[3]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "python $driver_dir ${ip_address[0]} ${shuffled_array[0]}" > ${HOME}/cass_log/client-${node1}-${shuffled_array[0]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "python $driver_dir ${ip_address[0]} ${shuffled_array[1]}" > ${HOME}/cass_log/client-${node1}-${shuffled_array[1]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "python $driver_dir ${ip_address[0]} ${shuffled_array[2]}" > ${HOME}/cass_log/client-${node1}-${shuffled_array[2]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "python $driver_dir ${ip_address[0]} ${shuffled_array[3]}" > ${HOME}/cass_log/client-${node1}-${shuffled_array[3]}.log 2>&1 &
 
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[1]} ${shuffled_array[4]}" > ${HOME}/cass_log/client-${node2}-${shuffled_array[4]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[1]} ${shuffled_array[5]}" > ${HOME}/cass_log/client-${node2}-${shuffled_array[5]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[1]} ${shuffled_array[6]}" > ${HOME}/cass_log/client-${node2}-${shuffled_array[6]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[1]} ${shuffled_array[7]}" > ${HOME}/cass_log/client-${node2}-${shuffled_array[7]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "python $driver_dir ${ip_address[1]} ${shuffled_array[4]}" > ${HOME}/cass_log/client-${node2}-${shuffled_array[4]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "python $driver_dir ${ip_address[1]} ${shuffled_array[5]}" > ${HOME}/cass_log/client-${node2}-${shuffled_array[5]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "python $driver_dir ${ip_address[1]} ${shuffled_array[6]}" > ${HOME}/cass_log/client-${node2}-${shuffled_array[6]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "python $driver_dir ${ip_address[1]} ${shuffled_array[7]}" > ${HOME}/cass_log/client-${node2}-${shuffled_array[7]}.log 2>&1 &
 
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[2]} ${shuffled_array[8]}" > ${HOME}/cass_log/client-${node3}-${shuffled_array[8]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[2]} ${shuffled_array[9]}" > ${HOME}/cass_log/client-${node3}-${shuffled_array[9]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[2]} ${shuffled_array[10]}" > ${HOME}/cass_log/client-${node3}-${shuffled_array[10]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[2]} ${shuffled_array[11]}" > ${HOME}/cass_log/client-${node3}-${shuffled_array[11]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "python $driver_dir ${ip_address[2]} ${shuffled_array[8]}" > ${HOME}/cass_log/client-${node3}-${shuffled_array[8]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "python $driver_dir ${ip_address[2]} ${shuffled_array[9]}" > ${HOME}/cass_log/client-${node3}-${shuffled_array[9]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "python $driver_dir ${ip_address[2]} ${shuffled_array[10]}" > ${HOME}/cass_log/client-${node3}-${shuffled_array[10]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "python $driver_dir ${ip_address[2]} ${shuffled_array[11]}" > ${HOME}/cass_log/client-${node3}-${shuffled_array[11]}.log 2>&1 &
 
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[3]} ${shuffled_array[12]}" > ${HOME}/cass_log/client-${node4}-${shuffled_array[12]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[3]} ${shuffled_array[13]}" > ${HOME}/cass_log/client-${node4}-${shuffled_array[13]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[3]} ${shuffled_array[14]}" > ${HOME}/cass_log/client-${node4}-${shuffled_array[14]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[3]} ${shuffled_array[15]}" > ${HOME}/cass_log/client-${node4}-${shuffled_array[15]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "python $driver_dir ${ip_address[3]} ${shuffled_array[12]}" > ${HOME}/cass_log/client-${node4}-${shuffled_array[12]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "python $driver_dir ${ip_address[3]} ${shuffled_array[13]}" > ${HOME}/cass_log/client-${node4}-${shuffled_array[13]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "python $driver_dir ${ip_address[3]} ${shuffled_array[14]}" > ${HOME}/cass_log/client-${node4}-${shuffled_array[14]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "python $driver_dir ${ip_address[3]} ${shuffled_array[15]}" > ${HOME}/cass_log/client-${node4}-${shuffled_array[15]}.log 2>&1 &
 
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[4]} ${shuffled_array[16]}" > ${HOME}/cass_log/client-${node5}-${shuffled_array[16]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[4]} ${shuffled_array[17]}" > ${HOME}/cass_log/client-${node5}-${shuffled_array[17]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[4]} ${shuffled_array[18]}" > ${HOME}/cass_log/client-${node5}-${shuffled_array[18]}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "rm -rf $client_dir && mkdir $client_dir && python $driver_dir ${ip_address[4]} ${shuffled_array[19]}" > ${HOME}/cass_log/client-${node5}-${shuffled_array[19]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "python $driver_dir ${ip_address[4]} ${shuffled_array[16]}" > ${HOME}/cass_log/client-${node5}-${shuffled_array[16]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "python $driver_dir ${ip_address[4]} ${shuffled_array[17]}" > ${HOME}/cass_log/client-${node5}-${shuffled_array[17]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "python $driver_dir ${ip_address[4]} ${shuffled_array[18]}" > ${HOME}/cass_log/client-${node5}-${shuffled_array[18]}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "python $driver_dir ${ip_address[4]} ${shuffled_array[19]}" > ${HOME}/cass_log/client-${node5}-${shuffled_array[19]}.log 2>&1 &
   echo "Executed srun on all nodes."
   sleep 3600
 fi
