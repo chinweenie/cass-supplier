@@ -118,6 +118,10 @@ if [ "$action" = "run" ] || [ "$action" = "calculate" ]; then
   #wait
 fi
 
+if [ "$action" = "delete" ]; then
+  srun --nodes=5 --ntasks=5 --cpus-per-task=2 --nodelist=$node1,$node2,$node3,$node4,$node5 bash -c "rm -r /temp/teamd-cass"
+fi
+
 
 
 
