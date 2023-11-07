@@ -7,6 +7,7 @@ export cassandra=$CASS_DIR/cassandra
 export nodetool="$CASS_DIR/nodetool"
 
 bstart() {
+   cd ~
    if [ $# -lt 1 ]; then
       echo "Usage: bstart <node_name1> [<node_name2> ...]"
       return 1
