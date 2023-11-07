@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9307a6a5-d964-415f-a51b-72625b7f589c" name="Changes" comment="" />
+    <list default="true" id="9307a6a5-d964-415f-a51b-72625b7f589c" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/.bashrc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cassandra/setup_scripts/batch_start1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/batch_start1.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cassandra/setup_scripts/install_cass.sh" beforeDir="false" afterPath="$PROJECT_DIR$/Cassandra/setup_scripts/install_cass.sh" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -63,11 +68,11 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Cassandra/setup_scripts" />
+      <recent name="$PROJECT_DIR$/Cassandra/result_csv" />
       <recent name="$PROJECT_DIR$/Cassandra/drivers" />
       <recent name="$PROJECT_DIR$/Cassandra/data_files" />
-      <recent name="$PROJECT_DIR$/Cassandra/setup_scripts" />
       <recent name="$PROJECT_DIR$/Cassandra" />
-      <recent name="$PROJECT_DIR$/reports" />
     </key>
   </component>
   <component name="RunManager" selected="Python.initialize_csv_files (1)">
@@ -175,7 +180,7 @@
       <workItem from="1698924553486" duration="12469000" />
       <workItem from="1699201835052" duration="795000" />
       <workItem from="1699234599149" duration="44713000" />
-      <workItem from="1699318722833" duration="6690000" />
+      <workItem from="1699318722833" duration="11570000" />
     </task>
     <servers />
   </component>
