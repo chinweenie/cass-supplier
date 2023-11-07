@@ -16,6 +16,7 @@ if [ ! -d "$dir" ]; then
  cd $CASS_DIR
  mkdir data_files
  mkdir xact_files
+
  cp -r ~/cass_data_files/data_files $CASS_DIR/
  cp -r ~/cass_data_files/xact_files $CASS_DIR/
  cp ~/cass_data_files/app.py $CASS_DIR/xact_files/

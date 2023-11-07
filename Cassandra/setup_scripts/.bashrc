@@ -30,6 +30,10 @@ bstart() {
    fi
    echo ${ip_addresses[@]}
 
+   if [ "$action" = "init" ]; then
+      rm -rf ~/cass_log
+   fi
+
    mkdir -p cass_log
    sbatch ~/cass_data_files/batch_start1.sh $action "${ip_addresses[@]}"
    cd cass_log

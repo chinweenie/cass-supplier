@@ -571,6 +571,7 @@ if __name__ == '__main__':
     # session.default_timeout = 60
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
     shared_dir = "/home/stuproj/cs4224d/cass_log/"
+    client_dir="/temp/teamd-cass/client/"
 
     districts_statement = session.prepare("""SELECT * FROM districts WHERE 
             d_w_id = ? AND d_id = ?""")
@@ -582,7 +583,7 @@ if __name__ == '__main__':
     start_time = time.time()
     try:
         # stdout for each client
-        with open(f"{shared_dir}stdout_client{filename}", 'w') as output_file:
+        with open(f"{client_dir}stdout_client{filename}", 'w') as output_file:
             dir_filename = os.path.join(directory, filename)
             with open(dir_filename, 'r') as file:
                 for line in file:
