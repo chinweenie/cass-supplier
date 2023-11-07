@@ -4,13 +4,14 @@ import time
 
 def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
     conn = None
+    cur = None
     start_time = time.time()
     try:
         # Establish connection to the database
         conn = psycopg2.connect(host=host, database=database, user=user, password=password)
         cur = conn.cursor()
-        print('connection success to:')
-        print(f'host: {host}  database:{database}  user:{user}')
+        # print('connection success to:')
+        # print(f'host: {host}  database:{database}  user:{user}')
 
         # # Begin transaction
         # conn.autocommit = False
@@ -26,7 +27,7 @@ def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
 
         # step1: get customer information with customer identifier
         customer_info_query = sql.SQL("""
-            select c_first, c_middle, c_last, c_balance from customer
+            select c_first, c_middle, c_last, c_balance from customers
             where c_w_id = %s and c_d_id = %s and c_id = %s
         """).format(sql.Literal(c_w_id), sql.Literal(c_d_id), sql.Literal(c_id))
         cur.execute(customer_info_query,(c_w_id,c_d_id,c_id))
@@ -37,7 +38,7 @@ def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
 
             #step2: query the last order info from orders table 
             last_order_query = sql.SQL("""
-                SELECT o_id, o_entry_d, o_carrier_id FROM order
+                SELECT o_id, o_entry_d, o_carrier_id FROM orders
                 WHERE o_w_id = %s AND o_d_id = %s AND o_c_id = %s
                 ORDER BY o_id DESC LIMIT 1
             """).format(sql.Literal(c_w_id), sql.Literal(c_d_id), sql.Literal(c_id))
@@ -49,7 +50,7 @@ def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
 
                 #step3: query each item in the last order from order-line table
                 order_line_query = sql.SQL("""
-                    SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM order_line
+                    SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM order_lines
                     WHERE ol_w_id = %s AND ol_d_id = %s AND ol_o_id = %s
                 """).format(sql.Literal(c_w_id), sql.Literal(c_d_id), sql.Literal(c_id))
                 cur.execute(order_line_query, (c_w_id, c_d_id, o_id))
@@ -96,5 +97,5 @@ def order_status(host, database, user, password, c_w_id, c_d_id, c_id):
         latency = (end_time - start_time) * 1000
         return latency
 
-# Example usage
-order_status(host="localhost", database="project", user="cs4224d", password="1234", c_w_id=1, c_d_id=1, c_id=1)
+# # Example usage
+# order_status(host="localhost", database="project", user="cs4224d", password="1234", c_w_id=1, c_d_id=1, c_id=1)
