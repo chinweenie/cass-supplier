@@ -20,11 +20,6 @@ def popular_item(host, database, port, user, password, w_id, d_id, last_orders_t
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
 
-        # Input: Warehouse number (W ID), District number (D ID), Number of last orders to be examined (L)
-        # w_id = 1  # Replace with the actual values
-        # d_id = 2  # Replace with the actual values
-        # last_orders_to_examine = 5  # Replace with the actual number of orders to examine (L)
-
         # Step 1: Get the next available order number (N) for the districts (W ID, D ID)
         cursor.execute(sql.SQL("""
             SELECT d_next_o_id
@@ -85,8 +80,8 @@ def popular_item(host, database, port, user, password, w_id, d_id, last_orders_t
 
                 for item_id, item_info in popular_items.items():
                     item_name = item_info["item_name"]
-                    quantity_ordered = None
 
+                    # Retrieve the correct quantity_ordered for each item
                     cursor.execute(sql.SQL("""
                         SELECT ol_quantity
                         FROM order_lines
@@ -96,10 +91,30 @@ def popular_item(host, database, port, user, password, w_id, d_id, last_orders_t
                     result = cursor.fetchone()
                     if result:
                         quantity_ordered = result[0]
+                    else:
+                        quantity_ordered = 0  # If no record is found, assume quantity is 0
 
-                    if quantity_ordered is not None and quantity_ordered > 0:
+                    if quantity_ordered > 0:
                         print("  Item Name:", item_name)
                         print("  Quantity Ordered:", quantity_ordered)
+
+                # for item_id, item_info in popular_items.items():
+                #     item_name = item_info["item_name"]
+                #     quantity_ordered = None
+
+                #     cursor.execute(sql.SQL("""
+                #         SELECT ol_quantity
+                #         FROM order_lines
+                #         WHERE ol_w_id = %s AND ol_d_id = %s AND ol_o_id = %s AND ol_i_id = %s
+                #     """), (w_id, d_id, order_id, item_id))
+
+                #     result = cursor.fetchone()
+                #     if result:
+                #         quantity_ordered = result[0]
+
+                #     if quantity_ordered is not None and quantity_ordered > 0:
+                #         print("  Item Name:", item_name)
+                #         print("  Quantity Ordered:", quantity_ordered)
 
             # Step 4: Calculate the percentage of examined orders that contain each popular item
             total_orders_examined = len(orders)
