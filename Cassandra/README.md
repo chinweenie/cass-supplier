@@ -11,6 +11,8 @@
    - start_cass.sh
    - startup.cql
    - load_data.cql
+   - data_files
+   - xact_files
 2. Download a stable version of Cassandra tarball into the HOME directory from https://cassandra.apache.org/_/download.html, we are using ```apache-cassandra-4.1.3-bin.tar.gz```.
 3. Copy the content in .bashrc file and paste it into the .bashrc file in the HOME directory, and run ```source .bashrc```.
 
