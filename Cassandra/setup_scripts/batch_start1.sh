@@ -118,11 +118,23 @@ fi
 if [ "$action" = "run" ] || [ "$action" = "calculate" ]; then
   echo "Killing Cassandra on all nodes"
   srun --nodes=5 --ntasks=5 --cpus-per-task=2 --nodelist=$node1,$node2,$node3,$node4,$node5 bash -c "kill $(ps aux | grep 'CassandraDaemon' | grep -v 'grep' | awk '{print $2}')"
-  #wait
+  sleep 10
+fi
+
+if [ "$action" = "collect"  ]; then
+  echo "Collecting stdout from each server"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node1"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node2"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node3"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node4"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node5"
+
+  sleep 10
 fi
 
 if [ "$action" = "delete" ]; then
   srun --nodes=5 --ntasks=5 --cpus-per-task=2 --nodelist=$node1,$node2,$node3,$node4,$node5 bash -c "rm -r /temp/teamd-cass"
+  sleep 10
 fi
 
 
