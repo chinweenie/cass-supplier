@@ -115,6 +115,16 @@ def process_p(db, values, output_file):
             "UPDATE customers SET c_balance = ?, c_ytd_payment = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
         batch.add(update_customer_statement, (new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_d_id, c_id))
 
+        # delete_query = db.prepare(
+        #     "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ?")
+        # batch.add(delete_query, (c_w_id, old_balance, c_d_id, c_id))
+        #
+        # insert_query = db.prepare(
+        #     "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, c_name, c_w_name, c_d_name) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        # batch.add(insert_query, (
+        #     new_balance, c_w_id, c_id, c_d_id, user_res.c_name, warehouses_res.w_name,
+        #     districts_res.d_name))
+
         db.execute(batch)
 
     except Exception as e:
@@ -296,6 +306,7 @@ def process_d(db, values, output_file):
         curr_timestamp = datetime.now()
         total_order_amount = Decimal(customer_values.c_balance)
         new_delivery_count = int(customer_values.c_delivery_cnt) + 1
+        customer_old_balance = Decimal(customer_values.c_balance)
         for ol in order_lines:
             ol_number = ol.ol_number
 
@@ -308,6 +319,32 @@ def process_d(db, values, output_file):
         # update customer tables with total amounts and delivery count
         db.execute_async(update_customer_stmt, [total_order_amount, new_delivery_count, o_w_id, o_d_id, o_c_id])
 
+        # Handle top_balances to update c_balance
+        # warehouses_res = db.execute(warehouses_statement, (customer_values.c_w_id,)).one()
+        # districts_res = db.execute(districts_statement, (customer_values.c_w_id, customer_values.c_d_id)).one()
+        # if not districts_res:
+        #     output_file.write("district not found")
+        #     return executed
+        # if not warehouses_res:
+        #     output_file.write("warehouse not found")
+        #     return executed
+        #
+        # if customer_old_balance != Decimal(total_order_amount):
+        #     batch = BatchStatement()
+        #     delete_query = db.prepare(
+        #         "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ?")
+        #     # delete_query.consistency_level = ConsistencyLevel.ALL
+        #     batch.add(delete_query,
+        #               (customer_values.c_w_id, customer_old_balance, customer_values.c_d_id, customer_values.c_id))
+        #     insert_query = db.prepare(
+        #         "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, c_name, c_w_name, "
+        #         "c_d_name) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        #     # insert_query.consistency_level = ConsistencyLevel.ALL
+        #     batch.add(insert_query, (
+        #         Decimal(total_order_amount), customer_values.c_w_id, customer_values.c_id, customer_values.c_d_id,
+        #         customer_values.c_name, warehouses_res.w_name,
+        #         districts_res.d_name))
+        #     db.execute(batch)
 
     delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
             WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
@@ -560,7 +597,7 @@ if __name__ == '__main__':
 
     cluster_profile = ExecutionProfile(
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
-        consistency_level=ConsistencyLevel.QUORUM,
+        consistency_level=ConsistencyLevel.ONE,
         retry_policy=DowngradingConsistencyRetryPolicy(),
         request_timeout=3000
     )
@@ -571,6 +608,7 @@ if __name__ == '__main__':
     # session.default_timeout = 60
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
     shared_dir = "/home/stuproj/cs4224d/cass_log/"
+    client_dir="/temp/teamd-cass/client/"
 
     districts_statement = session.prepare("""SELECT * FROM districts WHERE 
             d_w_id = ? AND d_id = ?""")
@@ -582,7 +620,7 @@ if __name__ == '__main__':
     start_time = time.time()
     try:
         # stdout for each client
-        with open(f"{shared_dir}stdout_client{filename}", 'w') as output_file:
+        with open(f"{client_dir}stdout_client{filename}", 'w') as output_file:
             dir_filename = os.path.join(directory, filename)
             with open(dir_filename, 'r') as file:
                 for line in file:

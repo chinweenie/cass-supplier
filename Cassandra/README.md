@@ -19,7 +19,8 @@
 2. Replace ```#SBATCH --nodelist=xcnc[37-41]``` in batch_start1.sh with the desired nodes.
 3. Run ```bstart init <node1> <node2> <node3> <node4> <node5>```, using the example above, our node1 will be xcnc37 and so on.
 4. You should see a jobid returned. You may track the progress of tasks inside the batch job using ```sacct -j <job_id> --format=JobID,Start,End,Elapsed,REQCPUS,ALLOCTRES%30,Node```.
-5. Wait for installation and first startup to complete, then run ```scancel <jobid>``` to stop the batch job.
+5. Wait for message like this to show up for successful startup on each node ```INFO  [Messaging-EventLoop-3-9] 2023-11-07 17:21:01,003 OutboundConnection.java:1153 - /192.168.48.189:7000(/192.168.48.189:58814)->/192.168.48.190:7000-LARGE_MESSAGES-f2d7811d successfully connected, version = 12, framing = LZ4, encryption = unencrypted```
+6. Run ```scancel <jobid>``` to stop the batch job.
 
 ## Step 3
 1. Run ```bstart run <node1> <node2> <node3> <node4> <node5>``` with the same set of nodes you have used in Step 2.
@@ -32,9 +33,13 @@
 3. Batch job will auto shutdown Cassandra on all nodes after 30 minutes.
 
 ## Step 5
+1. Run ```bstart collect <node1> <node2> <node3> <node4> <node5>```with the same set of nodes you have used in Step 2.
+2. You should see the stdout being collected and copied in the cass_log directory from different nodes.
+
+## Step 6
 1. Run ```zip -r cass_log cass_log``` in HOME directory.
 2. Run ```bash paste_file.sh``` on your local machine to copy the zipped cass_log to your local machine.
 
-## Step 6:
+## Step 7:
 This step will remove all the configuration and installation files from the /temp directory:
 1. Run ```bstart delete <node1> <node2> <node3> <node4> <node5>```with the same set of nodes you have used in Step 2.

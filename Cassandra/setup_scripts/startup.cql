@@ -98,6 +98,20 @@ WITH CLUSTERING ORDER BY (C_BALANCE DESC, C_D_ID ASC, C_ID ASC);
 --     C_ID                INT,
 --     C_NAME              name,
 --     C_W_ID              INT,
+--     C_W_NAME              VARCHAR,
+--     C_D_NAME              VARCHAR,
+--     C_D_ID              INT,
+--     PRIMARY KEY ((C_W_ID), C_BALANCE, C_D_ID, C_ID)
+-- ) WITH CLUSTERING ORDER BY (C_BALANCE DESC, C_D_ID ASC, C_ID ASC)
+-- AND compaction = { 'class' :  'LeveledCompactionStrategy'  }
+-- ;
+
+-- CREATE TABLE IF NOT EXISTS supplier.top_balances
+-- (
+--     C_BALANCE           DECIMAL,
+--     C_ID                INT,
+--     C_NAME              name,
+--     C_W_ID              INT,
 --     W_NAME              VARCHAR,
 --     D_NAME              VARCHAR,
 --     C_D_ID              INT,

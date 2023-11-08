@@ -15,6 +15,8 @@ logtime() {
 }
 
 source ${HOME}/.bashrc
+CASSD=${HOME}/cass_data_files/
+client_dir="/temp/teamd-cass/client/"
 echo $@
 action="$1"
 shift
@@ -39,34 +41,35 @@ node3="${nodes_list[2]}"
 node4="${nodes_list[3]}"
 node5="${nodes_list[4]}"
 
-chmod +x  ${HOME}/install_cass.sh
-chmod +x  ${HOME}/start_cass.sh
+chmod +x  ${CASSD}/install_cass.sh
+chmod +x  ${CASSD}/start_cass.sh
 
 if [ "$action" = "init" ]; then
   echo "Installing Cassandra and setting up configuration yaml in each node"
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node1}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node2}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node3}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node4}.log 2>&1 &
-  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 ${HOME}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node5}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node1}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node2}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node3}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node4}.log 2>&1 &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node5}.log 2>&1 &
   sleep 100
 fi
 
 if [ "$action" = "init" ] || [ "$action" = "run" ] || [ "$action" = "calculate" ]; then
   echo "Starting Cassandra on every node"
-  srun --nodes=3 --ntasks=3 --cpus-per-task=12 --nodelist=$node1,$node2,$node3 ${HOME}/start_cass.sh &
+  srun --nodes=3 --ntasks=3 --cpus-per-task=12 --nodelist=$node1,$node2,$node3 ${CASSD}/start_cass.sh &
   sleep 120
-  srun --nodes=1 --ntasks=1 --cpus-per-task=12 --nodelist=$node4 ${HOME}/start_cass.sh &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=12 --nodelist=$node4 ${CASSD}/start_cass.sh &
   sleep 120
-  srun --nodes=1 --ntasks=1 --cpus-per-task=12 --nodelist=$node5 ${HOME}/start_cass.sh &
+  srun --nodes=1 --ntasks=1 --cpus-per-task=12 --nodelist=$node5 ${CASSD}/start_cass.sh &
   sleep 120
 fi
 
 if [ "$action" = "run" ]; then
   echo "Creating tables and keyspace in $node1 using ${ip_address[0]}"
+#  rm -rf $client_dir && mkdir -p $client_dir &&
   srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "python $CASS_DIR/cqlsh.py ${ip_address[0]} < $CASS_DIR/data_files/startup.cql" > ${HOME}/cass_log/create-schema.log 2>&1 &
   echo "Completed create tables and keyspace"
-  sleep 300
+  sleep 120
 
   echo "Loading data in $node2 using ${ip_address[1]}"
   srun --nodes=1 --ntasks=1 --cpus-per-task=4 --nodelist=$node2 bash -c "python $CASS_DIR/cqlsh.py ${ip_address[1]} < $CASS_DIR/data_files/load_data.cql" > ${HOME}/cass_log/load-data.log 2>&1 &
@@ -115,11 +118,23 @@ fi
 if [ "$action" = "run" ] || [ "$action" = "calculate" ]; then
   echo "Killing Cassandra on all nodes"
   srun --nodes=5 --ntasks=5 --cpus-per-task=2 --nodelist=$node1,$node2,$node3,$node4,$node5 bash -c "kill $(ps aux | grep 'CassandraDaemon' | grep -v 'grep' | awk '{print $2}')"
-  #wait
+  sleep 10
+fi
+
+if [ "$action" = "collect"  ]; then
+  echo "Collecting stdout from each server"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node1"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node2"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node3 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node3"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node4 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node4"
+  srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node5 bash -c "cp -r /temp/teamd-cass/client $HOME/cass_log/client-$node5"
+
+  sleep 10
 fi
 
 if [ "$action" = "delete" ]; then
   srun --nodes=5 --ntasks=5 --cpus-per-task=2 --nodelist=$node1,$node2,$node3,$node4,$node5 bash -c "rm -r /temp/teamd-cass"
+  sleep 10
 fi
 
 

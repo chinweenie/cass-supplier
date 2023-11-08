@@ -127,10 +127,11 @@ def process_top_balances():
     merged_df = pandas.merge(customer_df, districts_df, left_on=['c_d_id', 'c_w_id'], right_on=['d_id', 'd_w_id'],
                              how='inner')
     final_merged_df = pandas.merge(merged_df, warehouses_df, left_on=['c_w_id'], right_on=['w_id'], how='inner')
-    final_merged_df['dummy_partition_key'] = 'global'
+    # final_merged_df['dummy_partition_key'] = 'global'
     final_merged_df = final_merged_df.drop('d_id', axis=1)
     final_merged_df = final_merged_df.drop('d_w_id', axis=1)
     final_merged_df = final_merged_df.drop('w_id', axis=1)
+    final_merged_df.rename(columns={'w_name': 'c_w_name', 'd_name': 'c_d_name'}, inplace=True)
     final_merged_df.to_csv(FILEDIR + 'top_balances_df.csv', index=False)
 
 
@@ -235,6 +236,7 @@ if __name__ == '__main__':
     process_undelivered_orders_by_warehouse_district()
     process_related_customers_txns()
     process_popular_items()
+    process_top_balances()
     # check_rows()
 
     print('csv initialization done')
