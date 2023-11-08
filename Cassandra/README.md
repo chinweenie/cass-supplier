@@ -33,9 +33,13 @@
 3. Batch job will auto shutdown Cassandra on all nodes after 30 minutes.
 
 ## Step 5
+1. Run ```bstart collect <node1> <node2> <node3> <node4> <node5>```with the same set of nodes you have used in Step 2.
+2. You should see the stdout being collected and copied in the cass_log directory from different nodes.
+
+## Step 6
 1. Run ```zip -r cass_log cass_log``` in HOME directory.
 2. Run ```bash paste_file.sh``` on your local machine to copy the zipped cass_log to your local machine.
 
-## Step 6:
+## Step 7:
 This step will remove all the configuration and installation files from the /temp directory:
 1. Run ```bstart delete <node1> <node2> <node3> <node4> <node5>```with the same set of nodes you have used in Step 2.
