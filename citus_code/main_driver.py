@@ -1,6 +1,7 @@
 import csv 
 import sys
 import numpy as np 
+import os
 
 # define csv name and set check for file header
 csv_name = "./result/clients.csv"
@@ -19,12 +20,17 @@ from deliver import deliver
 from top_balance import top_balance
 from order_status import order_status
 from related_customer import related_customer
+from new_order import new_order
+from payment import payment
+from stock_level import stock_level
+from popular_item import popular_item
 
 # parameters link to citus 
 host="localhost"
 database="project"
 user="cs4224d"
 password="1234"
+port="5100"
 
 loop_count = 0 
 total_time = 0 
@@ -35,7 +41,7 @@ transaction_latency_list = []
 # a bash is required for txt file input 
 for line in sys.stdin:
     loop_count += 1
-    print("read line:", loop_count) 
+    # print("read line:", loop_count) 
     if not line: 
         break
     else: 
@@ -66,8 +72,44 @@ for line in sys.stdin:
         c_w_id, c_d_id, c_id = transaction_message[1], transaction_message[2], transaction_message[3]
         latency = related_customer(host, database, user, password, c_w_id, c_d_id, c_id)
 
-    # please add your functions below 
+    # execute new_order transaction
+    elif transaction_type == 'N':
+        c_id, w_id, d_id, num_items = transaction_message[1], transaction_message[2], transaction_message[3], int(transaction_message[4])
+        # Create lists to store order item details
+        item_numbers = []
+        supplier_warehouses = []
+        quantities = []
 
+        # Read the next M lines for item details
+        for _ in range(num_items):
+            item_line = sys.stdin.readline().strip().split(',')
+            item_numbers.append(item_line[0])
+            supplier_warehouses.append(item_line[1])
+            quantities.append(int(item_line[2]))
+
+        # Create a tuple with order item details
+        c_order = (item_numbers, supplier_warehouses, quantities)
+
+        # Call the new_order function and pass the c_order tuple
+        latency = new_order(host, database, port, user, password, c_id, w_id, d_id, num_items, c_order)
+
+    # execute payment transaction
+    elif transaction_type == 'P':
+        c_w_id, c_d_id, c_id, payment_amount = transaction_message[1], transaction_message[2], transaction_message[3], float(transaction_message[4])
+        latency = payment(host, database, port, user, password, c_w_id, c_d_id, c_id, payment_amount)
+
+    # execute stock_level transaction
+    elif transaction_type == 'S':
+        w_id, d_id, stock_threshold, last_orders_to_examine = transaction_message[1], transaction_message[2], int(transaction_message[3]), int(transaction_message[4])
+        latency = stock_level(host, database, port, user, password, w_id, d_id, stock_threshold, last_orders_to_examine)
+    
+    # execute popular_item transaction
+    elif transaction_type == 'I':
+        w_id, d_id, last_orders_to_examine = transaction_message[1], transaction_message[2], int(transaction_message[3])
+        latency = popular_item(host, database, port, user, password, w_id, d_id, last_orders_to_examine)
+    
+    else: 
+        continue
 
     transaction_latency_list.append(latency)
     total_time += latency

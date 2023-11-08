@@ -209,15 +209,15 @@ def process_i(db, values, output_file):
     S_res = db.execute(last_L_order_lookup_statement, (w_id, d_id, N - L))
     S_df = pd.DataFrame(list(S_res))
 
-    s_without_id_df = S_df.drop(['i_id'], axis=1)
+    # s_without_id_df = S_df.drop(['i_id'], axis=1)
 
     p_df = S_df[['i_id', 'i_name']]
     p_df = p_df.value_counts().reset_index().rename(columns={"count": "percentage"})
     p_df['percentage'] = (p_df['percentage'] * 100 / L).round(2)
-    p_df = p_df.drop(['i_id'], axis=1)
+    # p_df = p_df.drop(['i_id'], axis=1)
 
     formatted_res = format_res({"W_ID": w_id, "D_ID": d_id, "L": L},
-                               s_without_id_df,
+                               S_df,
                                p_df)
     output_file.write(formatted_res)
 
@@ -249,19 +249,19 @@ def process_d(db, values, output_file):
 
 
     update_carrier_stmt = db.prepare("UPDATE orders SET o_carrier_id = ? WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?")
-    # update_carrier_stmt.consistency_level = ConsistencyLevel.ALL
+    update_carrier_stmt.consistency_level = ConsistencyLevel.QUORUM
     update_orders_by_customer_stt = db.prepare("UPDATE orders_by_customer SET o_carrier_id = ? WHERE c_w_id = ? AND "
                                                "c_d_id = ? AND c_id = ? AND o_id = ? ")
-    # update_orders_by_customer_stt.consistency_level = ConsistencyLevel.ALL
+    update_orders_by_customer_stt.consistency_level = ConsistencyLevel.QUORUM
     get_order_lines_stmt = db.prepare("SELECT * FROM order_lines WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ?")
     update_order_lines_stmt = db.prepare("""UPDATE order_lines SET ol_delivery_d = ? WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? 
             AND ol_number = ?""")
-    # update_order_lines_stmt.consistency_level = ConsistencyLevel.ALL
+    update_order_lines_stmt.consistency_level = ConsistencyLevel.QUORUM
     get_customer_row_values = db.prepare(
         "SELECT c_balance, c_delivery_cnt, c_w_id, c_d_id, c_id, c_name FROM customers WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
     update_customer_stmt = db.prepare(
         "UPDATE customers SET c_balance = ?, c_delivery_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
-    # update_customer_stmt.consistency_level = ConsistencyLevel.ALL
+    update_customer_stmt.consistency_level = ConsistencyLevel.QUORUM
     # update carrier_id in orders for each delivered order
     # update all order lines for the order to current date and time
     # update customer balance by total price of the orders
@@ -311,7 +311,7 @@ def process_d(db, values, output_file):
 
     delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
             WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
-    # delete_order_stmt.consistency_level = ConsistencyLevel.ALL
+    delete_order_stmt.consistency_level = ConsistencyLevel.QUORUM
     # delete delivered orders from undelivered orders table
     for order in oldest_undelivered_orders:
         if (order == None):
@@ -415,12 +415,12 @@ def process_n(db, values, output_file):
     # prepare statements here
     last_order_num_lookup_statement = districts_statement
         # db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
-    # last_order_num_lookup_statement.consistency_level = ConsistencyLevel.ALL # make sure having the latest order num
+    last_order_num_lookup_statement.consistency_level = ConsistencyLevel.QUORUM # make sure having the latest order num
     last_L_order_lookup_statement = db.prepare("UPDATE districts SET d_next_o_id = ? WHERE d_w_id = ? AND d_id = ?")
     create_order_statement = db.prepare("INSERT INTO orders (o_w_id,o_d_id,o_id,o_c_id,o_ol_cnt,o_carrier_id,o_all_local,o_entry_d) \
                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
                                             IF NOT EXISTS") # make sure orders are not overwriting
-    # create_order_statement.consistency_level = ConsistencyLevel.ALL
+    create_order_statement.consistency_level = ConsistencyLevel.QUORUM
     all_local = 1
     for item in ols:
         if item[1] != w_id :
@@ -560,7 +560,7 @@ if __name__ == '__main__':
 
     cluster_profile = ExecutionProfile(
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
-        consistency_level=ConsistencyLevel.ONE,
+        consistency_level=ConsistencyLevel.QUORUM,
         retry_policy=DowngradingConsistencyRetryPolicy(),
         request_timeout=3000
     )
@@ -568,7 +568,7 @@ if __name__ == '__main__':
     cluster = Cluster([ip_address])
     session = cluster.connect()
     session.set_keyspace('supplier')
-    session.default_timeout = 60
+    # session.default_timeout = 60
     directory = "/temp/teamd-cass/apache-cassandra-4.1.3/bin/xact_files/"
     shared_dir = "/home/stuproj/cs4224d/cass_log/"
 

@@ -2,4 +2,8 @@
 /.vs/*
 *.txt
 copy_stats.sh
-cass_stats/
+Cassandra/cass_stats/
+Cassandra/data_files/
+Cassandra/init-cassandra.sh
+Cassandra/cassandra.yaml
+reports/

@@ -141,7 +141,7 @@ def check_rows():
 
     customer_rows = pandas.read_csv(FILEDIR+'customer.csv', header=None).shape[0]
     customer_df_rows = pandas.read_csv(FILEDIR+'customer_df.csv', header=None).shape[0]-1
-    num_rows = pandas.read_csv('top_balances_df.csv', header=None).shape[0]-1
+    num_rows = pandas.read_csv('../data_files/top_balances_df.csv', header=None).shape[0] - 1
     print(f"customer_rows:{customer_rows}, customer_df_rows:{customer_df_rows}, top_balances_df:{num_rows}")
 
     order_rows = pandas.read_csv(FILEDIR+'order.csv', header=None).shape[0]

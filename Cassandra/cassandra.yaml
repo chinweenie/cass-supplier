@@ -550,7 +550,7 @@ seed_provider:
     parameters:
       # seeds is actually a comma-delimited list of addresses.
       # Ex: "<ip1>,<ip2>,<ip3>"
-      - seeds: "192.168.48.249,192.168.48.252"
+      - seeds: "192.168.51.67,192.168.51.68,192.168.51.69"
 
 # For workloads with more data than can fit in memory, Cassandra's
 # bottleneck will be reads that need to fetch data from
@@ -760,7 +760,7 @@ ssl_storage_port: 7001
 #
 # Setting listen_address to 0.0.0.0 is always wrong.
 #
-listen_address: 192.168.48.249
+listen_address: $(hostname -I | awk '{print $1}')
 
 # Set listen_address OR listen_interface, not both. Interfaces must correspond
 # to a single address, IP aliasing is not supported.
@@ -774,7 +774,7 @@ listen_address: 192.168.48.249
 
 # Address to broadcast to other Cassandra nodes
 # Leaving this blank will set it to the same value as listen_address
-# broadcast_address: 1.2.3.4
+broadcast_address: 
 
 # When using multiple physical network interfaces, set this
 # to true to listen on broadcast_address in addition to
@@ -856,7 +856,7 @@ native_transport_allow_older_protocols: true
 # set broadcast_rpc_address to a value other than 0.0.0.0.
 #
 # For security reasons, you should not expose this port to the internet.  Firewall it if needed.
-rpc_address: 192.168.48.249
+rpc_address: $(hostname -I | awk '{print $1}')
 
 # Set rpc_address OR rpc_interface, not both. Interfaces must correspond
 # to a single address, IP aliasing is not supported.
@@ -1057,15 +1057,15 @@ uuid_sstable_identifiers_enabled: false
 # How long the coordinator should wait for read operations to complete.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
-read_request_timeout: 12000ms
+read_request_timeout: 3000000ms
 # How long the coordinator should wait for seq or index scans to complete.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
-range_request_timeout: 12000ms
+range_request_timeout: 3000000ms
 # How long the coordinator should wait for writes to complete.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
-write_request_timeout: 12000ms
+write_request_timeout: 300000ms
 # How long the coordinator should wait for counter writes to complete.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
@@ -1084,7 +1084,7 @@ truncate_request_timeout: 60000ms
 # The default timeout for other, miscellaneous operations.
 # Lowest acceptable value is 10 ms.
 # Min unit: ms
-request_timeout: 12000ms
+request_timeout: 300000ms
 
 # Defensive settings for protecting Cassandra from true network partitions.
 # See (CASSANDRA-14358) for details.
@@ -1271,7 +1271,7 @@ slow_query_log_timeout: 500ms
 #
 # You can use a custom Snitch by setting this to the full class name
 # of the snitch, which will be assumed to be on your classpath.
-endpoint_snitch: SimpleSnitch
+endpoint_snitch: GossipingPropertyFileSnitch
 
 # controls how often to perform the more expensive part of host score
 # calculation
@@ -1643,7 +1643,7 @@ report_unconfirmed_repaired_data_mismatches: false
 
 # Enables materialized view creation on this node.
 # Materialized views are considered experimental and are not recommended for production use.
-materialized_views_enabled: false
+materialized_views_enabled: true
 
 # Enables SASI index creation on this node.
 # SASI indexes are considered experimental and are not recommended for production use.
@@ -1817,3 +1817,4 @@ drop_compact_storage_enabled: false
 #    heartbeat_file: /var/lib/cassandra/data/cassandra-heartbeat
 #    excluded_keyspaces: # comma separated list of keyspaces to exclude from the check
 #    excluded_tables: # comma separated list of keyspace.table pairs to exclude from the check
+auto_bootstrap: false
