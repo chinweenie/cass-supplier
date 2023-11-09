@@ -296,13 +296,6 @@ def process_d(db, values, output_file):
         # get order_lines corresponding to the order
         order_lines = db.execute(get_order_lines_stmt, [o_w_id, o_d_id, o_id])
 
-        # get customer balance and delivery count values from table. searched by unique key so only 1 result
-        # customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one()
-
-        # customer not found
-        if (customer_values == None):
-            return executed
-
         # update all order_lines to current date and time
         curr_timestamp = datetime.now()
         total_order_amount = Decimal(0)
@@ -319,6 +312,9 @@ def process_d(db, values, output_file):
 
         # get customer balance and delivery count values from table. searched by unique key so only 1 result
         customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one
+
+        if (customer_values == None):
+            return executed
 
         total_order_amount = total_order_amount + Decimal(customer_values.c_balance)
         new_delivery_count += 1
