@@ -426,9 +426,8 @@ def process_n(db, values, output_file):
 
     # prepare statements here
     last_order_num_lookup_statement = districts_statement
-        # db.prepare("SELECT * FROM districts WHERE d_w_id = ? AND d_id = ?")
-    last_order_num_lookup_statement.consistency_level = ConsistencyLevel.QUORUM # make sure having the latest order num
-    last_L_order_lookup_statement = db.prepare("UPDATE districts SET d_next_o_id = ? WHERE d_w_id = ? AND d_id = ?")
+    last_order_num_update_statement = db.prepare("UPDATE districts SET d_next_o_id = ? WHERE d_w_id = ? AND d_id = ?")
+    last_order_num_update_statement.consistency_level = ConsistencyLevel.ALL
     create_order_statement = db.prepare("INSERT INTO orders (o_w_id,o_d_id,o_id,o_c_id,o_ol_cnt,o_carrier_id,o_all_local,o_entry_d) \
                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
                                             IF NOT EXISTS") # make sure orders are not overwriting
@@ -449,7 +448,7 @@ def process_n(db, values, output_file):
         N, d_tax = d_res.d_next_o_id, d_res.d_tax
 
         # update d_next_o_id column by 1
-        db.execute(last_L_order_lookup_statement, (N+1, w_id, d_id))
+        db.execute(last_order_num_update_statement, (N+1, w_id, d_id))
 
         # create a new order
         o_res = db.execute(create_order_statement, (w_id, d_id, N, c_id, total_item_quantity, None, all_local, o_entry_date))
