@@ -7,3 +7,5 @@ Cassandra/data_files/
 Cassandra/init-cassandra.sh
 Cassandra/cassandra.yaml
 reports/
+/cass_stats/20231103_024834
+/cass_stats/20231103_024834.zip
