@@ -74,24 +74,11 @@ def process_p(db, values, output_file):
     c_id = int(values[3])
     payment = Decimal(values[4])
 
+    # read and update c_ytd
     user_res = db.execute(customers_statement, (c_w_id, c_d_id, c_id)).one()
     print(user_res)
     if not user_res:
         output_file.write(f"customer not found")
-        return executed
-
-    warehouses = warehouses_statement
-    # warehouses.consistency_level = ConsistencyLevel.ONE
-    warehouses_res = db.execute(warehouses, (c_w_id,)).one()
-    if not warehouses_res:
-        output_file.write(f"warehouse not found")
-        return executed
-
-    districts = districts_statement
-    # districts.consistency_level = ConsistencyLevel.ONE
-    districts_res = db.execute(districts, (c_w_id, c_d_id)).one()
-    if not districts_res:
-        output_file.write(f"district not found")
         return executed
 
     old_balance = Decimal(user_res.c_balance)
@@ -100,36 +87,50 @@ def process_p(db, values, output_file):
     new_ytd_balance = Decimal(user_res.c_ytd_payment) + payment
     new_payment_cnt = user_res.c_payment_cnt + 1
 
+    update_customer_statement = db.prepare(
+        "UPDATE customers SET c_balance = ?, c_ytd_payment = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
+    db.execute(update_customer_statement, (new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_d_id, c_id))
+
+
+    # read and update w_ytd
+    warehouses = warehouses_statement
+    # warehouses.consistency_level = ConsistencyLevel.ONE
+    warehouses_res = db.execute(warehouses, (c_w_id,)).one()
+    if not warehouses_res:
+        output_file.write(f"warehouse not found")
+        return executed
+
     new_warehouse_ytd = Decimal(warehouses_res.w_ytd) + payment
+
+    update_warehouse_statement = db.prepare("UPDATE warehouses SET w_ytd = ? WHERE w_id = ?")
+    db.execute(update_warehouse_statement, (new_warehouse_ytd, c_w_id))
+
+    districts = districts_statement
+    # districts.consistency_level = ConsistencyLevel.ONE
+    districts_res = db.execute(districts, (c_w_id, c_d_id)).one()
+    if not districts_res:
+        output_file.write(f"district not found")
+        return executed
+
     new_district_ytd = Decimal(districts_res.d_ytd) + payment
 
-    try:
-        batch = BatchStatement()
-        update_warehouse_statement = db.prepare("UPDATE warehouses SET w_ytd = ? WHERE w_id = ?")
-        batch.add(update_warehouse_statement, (new_warehouse_ytd, c_w_id))
+    update_district_statement = db.prepare("UPDATE districts SET d_ytd = ? WHERE d_w_id = ? AND d_id = ?")
+    db.execute(update_district_statement, (new_district_ytd, c_w_id, c_d_id))
 
-        update_district_statement = db.prepare("UPDATE districts SET d_ytd = ? WHERE d_w_id = ? AND d_id = ?")
-        batch.add(update_district_statement, (new_district_ytd, c_w_id, c_d_id))
 
-        update_customer_statement = db.prepare(
-            "UPDATE customers SET c_balance = ?, c_ytd_payment = ?, c_payment_cnt = ? WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?")
-        batch.add(update_customer_statement, (new_balance, new_ytd_balance, new_payment_cnt, c_w_id, c_d_id, c_id))
+    # delete_query = db.prepare(
+    #     "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ?")
+    # batch.add(delete_query, (c_w_id, old_balance, c_d_id, c_id))
+    #
+    # insert_query = db.prepare(
+    #     "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, c_name, c_w_name, c_d_name) VALUES (?, ?, ?, ?, ?, ?, ?)")
+    # batch.add(insert_query, (
+    #     new_balance, c_w_id, c_id, c_d_id, user_res.c_name, warehouses_res.w_name,
+    #     districts_res.d_name))
 
-        # delete_query = db.prepare(
-        #     "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ?")
-        # batch.add(delete_query, (c_w_id, old_balance, c_d_id, c_id))
-        #
-        # insert_query = db.prepare(
-        #     "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, c_name, c_w_name, c_d_name) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        # batch.add(insert_query, (
-        #     new_balance, c_w_id, c_id, c_d_id, user_res.c_name, warehouses_res.w_name,
-        #     districts_res.d_name))
-
-        db.execute(batch)
-
-    except Exception as e:
-        output_file.write(f"Error occurred: {e}")
-        return executed
+    #except Exception as e:
+    #    output_file.write(f"Error occurred: {e}")
+    #    return executed
 
     formatted_res = format_res({'c_w_id': c_w_id,
                                 'c_d_id': c_d_id,
@@ -319,33 +320,6 @@ def process_d(db, values, output_file):
         # update customer tables with total amounts and delivery count
         db.execute_async(update_customer_stmt, [total_order_amount, new_delivery_count, o_w_id, o_d_id, o_c_id])
 
-        # Handle top_balances to update c_balance
-        # warehouses_res = db.execute(warehouses_statement, (customer_values.c_w_id,)).one()
-        # districts_res = db.execute(districts_statement, (customer_values.c_w_id, customer_values.c_d_id)).one()
-        # if not districts_res:
-        #     output_file.write("district not found")
-        #     return executed
-        # if not warehouses_res:
-        #     output_file.write("warehouse not found")
-        #     return executed
-        #
-        # if customer_old_balance != Decimal(total_order_amount):
-        #     batch = BatchStatement()
-        #     delete_query = db.prepare(
-        #         "DELETE FROM top_balances WHERE c_w_id = ? AND c_balance = ? AND c_d_id = ? AND c_id = ?")
-        #     # delete_query.consistency_level = ConsistencyLevel.ALL
-        #     batch.add(delete_query,
-        #               (customer_values.c_w_id, customer_old_balance, customer_values.c_d_id, customer_values.c_id))
-        #     insert_query = db.prepare(
-        #         "INSERT INTO top_balances (c_balance, c_w_id, c_id, c_d_id, c_name, c_w_name, "
-        #         "c_d_name) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        #     # insert_query.consistency_level = ConsistencyLevel.ALL
-        #     batch.add(insert_query, (
-        #         Decimal(total_order_amount), customer_values.c_w_id, customer_values.c_id, customer_values.c_d_id,
-        #         customer_values.c_name, warehouses_res.w_name,
-        #         districts_res.d_name))
-        #     db.execute(batch)
-
     delete_order_stmt = db.prepare("""DELETE FROM undelivered_orders_by_warehouse_district 
             WHERE o_w_id = ? AND o_d_id = ? AND o_id = ?""")
     delete_order_stmt.consistency_level = ConsistencyLevel.QUORUM
@@ -459,10 +433,13 @@ def process_n(db, values, output_file):
                                             IF NOT EXISTS") # make sure orders are not overwriting
     create_order_statement.consistency_level = ConsistencyLevel.QUORUM
     all_local = 1
+    total_item_quantity = 0
     for item in ols:
         if item[1] != w_id :
             all_local = 0
             break
+        total_item_quantity += item[2]
+
     o_entry_date = datetime.now()
 
     not_success = True
@@ -474,7 +451,7 @@ def process_n(db, values, output_file):
         db.execute(last_L_order_lookup_statement, (N+1, w_id, d_id))
 
         # create a new order
-        o_res = db.execute(create_order_statement, (w_id, d_id, N, c_id, m, None, all_local, o_entry_date))
+        o_res = db.execute(create_order_statement, (w_id, d_id, N, c_id, total_item_quantity, None, all_local, o_entry_date))
         is_order_create_success = o_res.one().applied
         not_success = False if is_order_create_success else True
 
@@ -510,6 +487,8 @@ def process_n(db, values, output_file):
         s_order_cnt += 1
         if s_w_id != w_id:
             s_remote_cnt += 1
+
+        db.execute_async(stock_update_statement, (adjusted_q, s_ytd, s_order_cnt, s_remote_cnt, s_w_id, i_id))
 
         # item amount
         i_res = db.execute(price_lookup_statement, ([i_id])).one()
@@ -597,7 +576,7 @@ if __name__ == '__main__':
 
     cluster_profile = ExecutionProfile(
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
-        consistency_level=ConsistencyLevel.ONE,
+        consistency_level=ConsistencyLevel.QUORUM,
         retry_policy=DowngradingConsistencyRetryPolicy(),
         request_timeout=3000
     )
