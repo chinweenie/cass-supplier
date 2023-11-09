@@ -432,7 +432,7 @@ def process_n(db, values, output_file):
     create_order_statement = db.prepare("INSERT INTO orders (o_w_id,o_d_id,o_id,o_c_id,o_ol_cnt,o_carrier_id,o_all_local,o_entry_d) \
                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
                                             IF NOT EXISTS") # make sure orders are not overwriting
-    create_order_statement.consistency_level = ConsistencyLevel.QUORUM
+    create_order_statement.consistency_level = ConsistencyLevel.ALL
     all_local = 1
     total_item_quantity = 0
     for item in ols:
