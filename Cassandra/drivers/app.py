@@ -297,7 +297,7 @@ def process_d(db, values, output_file):
         order_lines = db.execute(get_order_lines_stmt, [o_w_id, o_d_id, o_id])
 
         # get customer balance and delivery count values from table. searched by unique key so only 1 result
-        customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one()
+        # customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one()
 
         # customer not found
         if (customer_values == None):
@@ -305,9 +305,9 @@ def process_d(db, values, output_file):
 
         # update all order_lines to current date and time
         curr_timestamp = datetime.now()
-        total_order_amount = Decimal(customer_values.c_balance)
-        new_delivery_count = int(customer_values.c_delivery_cnt) + 1
-        customer_old_balance = Decimal(customer_values.c_balance)
+        total_order_amount = Decimal(0)
+        new_delivery_count = 0
+
         for ol in order_lines:
             ol_number = ol.ol_number
 
@@ -317,6 +317,11 @@ def process_d(db, values, output_file):
             # calculate total sum of order
             total_order_amount = total_order_amount + Decimal(ol.ol_amount)
 
+        # get customer balance and delivery count values from table. searched by unique key so only 1 result
+        customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one
+
+        total_order_amount = total_order_amount + Decimal(customer_values.c_balance)
+        new_delivery_count += 1
         # update customer tables with total amounts and delivery count
         db.execute_async(update_customer_stmt, [total_order_amount, new_delivery_count, o_w_id, o_d_id, o_c_id])
 
