@@ -436,10 +436,10 @@ def process_n(db, values, output_file):
     all_local = 1
     total_item_quantity = 0
     for item in ols:
-        if item[1] != w_id :
+        if int(item[1]) != w_id :
             all_local = 0
             break
-        total_item_quantity += item[2]
+        total_item_quantity += int(item[2])
 
     o_entry_date = datetime.now()
 
