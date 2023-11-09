@@ -3,7 +3,7 @@
 #SBATCH --partition=long
 #SBATCH --output=/home/stuproj/cs4224d/cass_log/start_cass-%j.out
 #SBATCH --error=/home/stuproj/cs4224d/cass_log/start_cass-%j.err
-#SBATCH --nodelist=xcnc[37-41]
+#SBATCH --nodelist=xcnd[33-37]
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem-per-cpu=2G
 #SBATCH --cpus-per-task=24
@@ -45,6 +45,7 @@ chmod +x  ${CASSD}/install_cass.sh
 chmod +x  ${CASSD}/start_cass.sh
 
 if [ "$action" = "init" ]; then
+#  srun --nodes=5 --ntasks=5 --cpus-per-task=2 --nodelist=$node1,$node2,$node3,$node4,$node5 bash -c "cp $CASSD/app.py $CASS_DIR/xact_files/" &
   echo "Installing Cassandra and setting up configuration yaml in each node"
   srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node1 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node1}.log 2>&1 &
   srun --nodes=1 --ntasks=1 --cpus-per-task=2 --nodelist=$node2 ${CASSD}/install_cass.sh ${ip_address[0]} ${ip_address[1]} ${ip_address[2]} > ${HOME}/cass_log/install_cass_${node2}.log 2>&1 &
