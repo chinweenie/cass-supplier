@@ -503,8 +503,6 @@ def process_n(db, values, output_file):
 
         # batch every order line
         batch = BatchStatement()
-        # update stock
-        batch.add(stock_update_statement, (adjusted_q, s_ytd, s_order_cnt, s_remote_cnt, s_w_id, i_id))
         # create new order line
         batch.add(create_order_line_statement, 
                                  (N, d_id, w_id, index+1, i_id, s_w_id, quantity, item_amount, None, "S_DIST_"+str(d_id)))
