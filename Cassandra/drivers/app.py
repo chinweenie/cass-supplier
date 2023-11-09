@@ -311,7 +311,7 @@ def process_d(db, values, output_file):
             total_order_amount = total_order_amount + Decimal(ol.ol_amount)
 
         # get customer balance and delivery count values from table. searched by unique key so only 1 result
-        customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one
+        customer_values = db.execute(get_customer_row_values, [o_w_id, o_d_id, o_c_id]).one()
 
         if (customer_values == None):
             return executed
