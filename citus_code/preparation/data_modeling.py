@@ -3,7 +3,7 @@ from psycopg2 import sql
 
 # parameters link to citus 
 host="localhost"
-database="project"
+database="citus_project"
 user="cs4224d"
 password="1234"
 

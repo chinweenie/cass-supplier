@@ -111,3 +111,17 @@ def payment(host, database, port, user, password, c_w_id, c_d_id, c_id, payment_
         end_time = time.time()
         latency = (end_time - start_time) * 1000
         return latency
+
+# parameters link to citus 
+host="localhost"
+database="citus_project"
+user="cs4224d"
+password="1234"
+port="5100"
+
+transaction_message = (0, 1,2,3,500)
+c_w_id, c_d_id, c_id, payment_amount = transaction_message[1], transaction_message[2], transaction_message[3], float(transaction_message[4])
+
+latency = payment(host, database, port, user, password, c_w_id, c_d_id, c_id, payment_amount)
+
+print("Duration cost by this task: ", latency)

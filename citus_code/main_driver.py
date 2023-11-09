@@ -27,7 +27,7 @@ from popular_item import popular_item
 
 # parameters link to citus 
 host="localhost"
-database="project"
+database="citus_project"
 user="cs4224d"
 password="1234"
 port="5100"

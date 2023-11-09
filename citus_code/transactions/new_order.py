@@ -38,97 +38,98 @@ def new_order(host, database, port, user, password, c_id, w_id, d_id, num_items,
 
         # Step 1: Get the next available order number (N) for the district (W ID, D ID)
         cursor.execute(sql.SQL("""
-            SELECT d_next_o_id
+            SELECT d_next_o_id, d_tax
             FROM districts
             WHERE d_w_id = %s AND d_id = %s
         """), (w_id, d_id))
-        next_order_number = cursor.fetchone()
 
-        if not next_order_number:
-            print(f"No district found with W ID: {w_id} and D ID: {d_id}")
-        else:
-            next_order_number = next_order_number[0]
+        district_info = cursor.fetchone()
+        next_order_number = district_info[0]
+        d_tax = district_info[1]
 
-            # Step 2: Update the district (W ID, D ID) by incrementing D NEXT O ID by one
+
+        # Step 2: Update the district (W ID, D ID) by incrementing D NEXT O ID by one
+        cursor.execute(sql.SQL("""
+            UPDATE districts
+            SET d_next_o_id = d_next_o_id + 1
+            WHERE d_w_id = %s AND d_id = %s
+        """), (w_id, d_id))
+
+        # Step 3: Create a new order
+        current_datetime = datetime.now()
+        o_entry_d = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
+        o_all_local = 1 if all(s == w_id for s in supplier_warehouses) else 0
+
+        cursor.execute(sql.SQL("""
+            INSERT INTO orders (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_carrier_id, o_ol_cnt, o_all_local)
+            VALUES (%s, %s, %s, %s, %s, NULL, %s, %s)
+        """), (next_order_number, d_id, w_id, c_id, o_entry_d, num_items, o_all_local))
+
+        total_amount = 0
+
+        # Step 5: Process each ordered item
+        for i in range(num_items):
+            item_number = item_numbers[i]
+            supplier_warehouse = supplier_warehouses[i]
+            quantity = quantities[i]
+
+            # Step 5(a): Get the stock quantity for the item
             cursor.execute(sql.SQL("""
-                UPDATE districts
-                SET d_next_o_id = d_next_o_id + 1
-                WHERE d_w_id = %s AND d_id = %s
-            """), (w_id, d_id))
+                SELECT s_quantity
+                FROM stocks
+                WHERE s_w_id = %s AND s_i_id = %s
+            """), (supplier_warehouse, item_number))
+            stock_quantity = cursor.fetchone()
 
-            # Step 3: Create a new order
-            current_datetime = datetime.now()
-            o_entry_d = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
-            o_all_local = 1 if all(s == w_id for s in supplier_warehouses) else 0
+            if not stock_quantity:
+                print(f"Item {item_number} not found in warehouse {supplier_warehouse}")
+                continue
 
+            stock_quantity = stock_quantity[0]
+
+            # Step 5(b & c): Adjust quantity based on stock level
+            adjusted_qty = stock_quantity - quantity
+            if adjusted_qty < 10:
+                adjusted_qty += 100
+
+            # Step 5(d): Update stock information
             cursor.execute(sql.SQL("""
-                INSERT INTO orders (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_carrier_id, o_ol_cnt, o_all_local)
-                VALUES (%s, %s, %s, %s, %s, NULL, %s, %s)
-            """), (next_order_number, d_id, w_id, c_id, o_entry_d, num_items, o_all_local))
+                UPDATE stocks
+                SET s_quantity = %s, s_ytd = s_ytd + %s, s_order_cnt = s_order_cnt + 1,
+                    s_remote_cnt = s_remote_cnt + %s
+                WHERE s_w_id = %s AND s_i_id = %s
+            """), (adjusted_qty, quantity, 1 if supplier_warehouse != w_id else 0, supplier_warehouse, item_number))
 
-            total_amount = 0
+            # Step 5(e): Calculate ITEM AMOUNT
+            cursor.execute(sql.SQL("""
+                SELECT i_price
+                FROM items
+                WHERE i_id = %s
+            """), (item_number,))
+            item_price = cursor.fetchone()[0]
+            item_amount = quantity * item_price
 
-            # Step 5: Process each ordered item
-            for i in range(num_items):
-                item_number = item_numbers[i]
-                supplier_warehouse = supplier_warehouses[i]
-                quantity = quantities[i]
+            # Step 5(f): Update TOTAL AMOUNT
+            total_amount += item_amount
 
-                # Step 5(a): Get the stock quantity for the item
-                cursor.execute(sql.SQL("""
-                    SELECT s_quantity
-                    FROM stocks
-                    WHERE s_w_id = %s AND s_i_id = %s
-                """), (supplier_warehouse, item_number))
-                stock_quantity = cursor.fetchone()
+            # Step 5(g): Create a new order-line
+            cursor.execute(sql.SQL("""
+                INSERT INTO order_lines (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id,
+                                    ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d, ol_dist_info)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL, %s)
+            """), (next_order_number, d_id, w_id, i + 1, item_number, supplier_warehouse, quantity, item_amount, f's_dist_{d_id}'))
 
-                if not stock_quantity:
-                    print(f"Item {item_number} not found in warehouse {supplier_warehouse}")
-                    continue
 
-                stock_quantity = stock_quantity[0]
-
-                # Step 5(b & c): Adjust quantity based on stock level
-                adjusted_qty = stock_quantity - quantity
-                if adjusted_qty < 10:
-                    adjusted_qty += 100
-
-                # Step 5(d): Update stock information
-                cursor.execute(sql.SQL("""
-                    UPDATE stocks
-                    SET s_quantity = %s, s_ytd = s_ytd + %s, s_order_cnt = s_order_cnt + 1,
-                        s_remote_cnt = s_remote_cnt + %s
-                    WHERE s_w_id = %s AND s_i_id = %s
-                """), (adjusted_qty, quantity, 1 if supplier_warehouse != w_id else 0, supplier_warehouse, item_number))
-
-                # Step 5(e): Calculate ITEM AMOUNT
-                cursor.execute(sql.SQL("""
-                    SELECT i_price
-                    FROM items
-                    WHERE i_id = %s
-                """), (item_number,))
-                item_price = cursor.fetchone()[0]
-                item_amount = quantity * item_price
-
-                # Step 5(f): Update TOTAL AMOUNT
-                total_amount += item_amount
-
-                # Step 5(g): Create a new order-line
-                cursor.execute(sql.SQL("""
-                    INSERT INTO order_lines (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id,
-                                        ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d, ol_dist_info)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL, %s)
-                """), (next_order_number, d_id, w_id, i + 1, item_number, supplier_warehouse, quantity, item_amount, f's_dist_{d_id}'))
 
                 
 
             # Step 6: Calculate the final total amount
-            cursor.execute(sql.SQL("""
-                SELECT d_tax
-                FROM districts
-                WHERE d_w_id = %s AND d_id = %s
-            """), (w_id, d_id))
-            d_tax = cursor.fetchone()[0]
+            # cursor.execute(sql.SQL("""
+            #     SELECT d_tax
+            #     FROM districts
+            #     WHERE d_w_id = %s AND d_id = %s
+            # """), (w_id, d_id))
+            # d_tax = cursor.fetchone()[0]
             
             cursor.execute(sql.SQL("""
                 SELECT w_tax
@@ -136,13 +137,6 @@ def new_order(host, database, port, user, password, c_id, w_id, d_id, num_items,
                 WHERE w_id = %s
             """), (w_id,))
             w_tax = cursor.fetchone()[0]
-
-            # cursor.execute(sql.SQL("""
-            #     SELECT c_discount
-            #     FROM customers
-            #     WHERE c_w_id = %s AND c_d_id = %s AND c_id = %s
-            # """), (w_id, d_id, c_id))
-            # c_discount = cursor.fetchone()[0]
 
             # Get customer information
             cursor.execute(sql.SQL("""
@@ -156,6 +150,13 @@ def new_order(host, database, port, user, password, c_id, w_id, d_id, num_items,
             c_discount = customer_info[2]
 
             total_amount = total_amount * (1 + d_tax + w_tax) * (1 - c_discount)
+
+            # cursor.execute(sql.SQL("""
+            #     SELECT c_discount
+            #     FROM customers
+            #     WHERE c_w_id = %s AND c_d_id = %s AND c_id = %s
+            # """), (w_id, d_id, c_id))
+            # c_discount = cursor.fetchone()[0]
 
             # # Get customer information
             # cursor.execute(sql.SQL("""
@@ -226,3 +227,42 @@ def new_order(host, database, port, user, password, c_id, w_id, d_id, num_items,
         end_time = time.time()
         latency = (end_time - start_time) * 1000
         return latency
+
+# parameters link to citus 
+host="localhost"
+database="citus_project"
+user="cs4224d"
+password="1234"
+port="5100"
+
+# N,2289,1,3,7
+# 2079,1,3
+# 6215,1,2
+# 38039,1,9
+# 40321,1,6
+# 40615,1,5
+# 47586,1,9
+# 84174,1,1
+
+transaction_message = (0, 1, 2, 3, 7)
+
+c_id, w_id, d_id, num_items = transaction_message[1], transaction_message[2], transaction_message[3], int(transaction_message[4])
+# Create lists to store order item details
+item_numbers = [2079, 6215, 38039, 40321, 40615, 47586, 84174]
+supplier_warehouses = [1,1,1,1,1,1,1]
+quantities = [3,2,9,6,5,9,1]
+
+# # Read the next M lines for item details
+# for _ in range(num_items):
+#     item_line = sys.stdin.readline().strip().split(',')
+#     item_numbers.append(item_line[0])
+#     supplier_warehouses.append(item_line[1])
+#     quantities.append(int(item_line[2]))
+
+# Create a tuple with order item details
+c_order = (item_numbers, supplier_warehouses, quantities)
+
+# Call the new_order function and pass the c_order tuple
+latency = new_order(host, database, port, user, password, c_id, w_id, d_id, num_items, c_order)
+
+print("Duration cost by this task: ", latency)
