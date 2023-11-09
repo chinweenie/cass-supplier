@@ -1,4 +1,3 @@
-*.csv
 /.vs/*
 *.txt
 copy_stats.sh
