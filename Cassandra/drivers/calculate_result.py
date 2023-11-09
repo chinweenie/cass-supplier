@@ -20,7 +20,7 @@ if __name__ == '__main__':
     print(f"Received IP Address: {ip_address}")
     cluster_profile = ExecutionProfile(
         load_balancing_policy=TokenAwarePolicy(RoundRobinPolicy()),
-        consistency_level=ConsistencyLevel.ONE,
+        consistency_level=ConsistencyLevel.ALL,
         retry_policy=DowngradingConsistencyRetryPolicy(),
     )
     cluster = Cluster([ip_address])
